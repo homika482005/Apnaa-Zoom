@@ -119,64 +119,7 @@ export default function VideoMeetComponent() {
         }
     };
 
-    // const getPermissions = async () => {
-    // try {
-    //     let videoPermission = false;
-    //     let audioPermission = false;
-
-    //     try {
-    //         const videoStream = await navigator.mediaDevices.getUserMedia({
-    //             video: true
-    //         });
-
-    //         videoPermission = true;
-    //         videoStream.getTracks().forEach(track => track.stop());
-
-    //         console.log("Video permission granted");
-    //     } catch (error) {
-    //         console.log("Video permission error:", error);
-    //     }
-
-    //     try {
-    //         const audioStream = await navigator.mediaDevices.getUserMedia({
-    //             audio: true
-    //         });
-
-    //         audioPermission = true;
-    //         audioStream.getTracks().forEach(track => track.stop());
-
-    //         console.log("Audio permission granted");
-    //     } catch (error) {
-    //         console.log("Audio permission error:", error);
-    //     }
-
-    //     setVideoAvailable(videoPermission);
-    //     setAudioAvailable(audioPermission);
-
-    //     if (navigator.mediaDevices.getDisplayMedia) {
-    //         setScreenAvailable(true);
-    //     } else {
-    //         setScreenAvailable(false);
-    //     }
-
-    //     if (videoPermission || audioPermission) {
-    //         const userMediaStream =
-    //             await navigator.mediaDevices.getUserMedia({
-    //                 video: videoPermission,
-    //                 audio: audioPermission
-    //             });
-
-    //         window.localStream = userMediaStream;
-
-    //         if (localVideoref.current) {
-    //             localVideoref.current.srcObject = userMediaStream;
-    //         }
-    //     }
-
-    //     } catch (error) {
-    //         console.log("Permission error:", error);
-    //     }
-    // };
+    
 
     useEffect(() => {
         if (video !== undefined && audio !== undefined) {

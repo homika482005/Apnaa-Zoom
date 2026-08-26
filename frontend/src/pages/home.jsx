@@ -40,11 +40,19 @@ function HomeComponent() {
             return;
         }
 
-        await addToUserHistory(
-            meetingCode
-        );
+        try {
 
-        navigate(`/${meetingCode}`);
+            await addToUserHistory(
+                meetingCode
+            );
+
+            navigate(`/${meetingCode}`);
+
+        } catch (e) {
+
+            console.log(e);
+
+        }
 
     }
 
@@ -146,7 +154,7 @@ function HomeComponent() {
                                 onClick={
                                     handleJoinVideoCall
                                 }
-                                variant='contained'
+                                variant="contained"
                             >
                                 Join
                             </Button>
@@ -158,7 +166,7 @@ function HomeComponent() {
                 </div>
 
 
-                <div className='rightPanel'>
+                <div className="rightPanel">
 
                     <img
                         srcSet='/logo3.png'

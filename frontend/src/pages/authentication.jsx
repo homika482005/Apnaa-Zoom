@@ -7,7 +7,10 @@ import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import {
+    createTheme,
+    ThemeProvider
+} from '@mui/material/styles';
 import { AuthContext } from '../contexts/AuthContext';
 import { Snackbar } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
@@ -15,27 +18,54 @@ import { useNavigate } from 'react-router-dom';
 
 const defaultTheme = createTheme();
 
+
 export default function Authentication() {
 
     const router = useNavigate();
 
-    const [username, setUsername] = React.useState();
-    const [password, setPassword] = React.useState();
-    const [name, setName] = React.useState();
-    const [email, setEmail] = React.useState();
-    const [error, setError] = React.useState();
-    const [message, setMessage] = React.useState();
 
-    const [googleCredential, setGoogleCredential] = React.useState();
-    const [googleName, setGoogleName] = React.useState();
-    const [googleEmail, setGoogleEmail] = React.useState();
-    const [googleAvatar, setGoogleAvatar] = React.useState();
+    const [username, setUsername] =
+        React.useState("");
 
-    const [googleUsernameMode, setGoogleUsernameMode] = React.useState(false);
+    const [password, setPassword] =
+        React.useState("");
 
-    const [formState, setFormState] = React.useState(0);
+    const [name, setName] =
+        React.useState("");
 
-    const [open, setOpen] = React.useState(false)
+    const [email, setEmail] =
+        React.useState("");
+
+    const [error, setError] =
+        React.useState("");
+
+    const [message, setMessage] =
+        React.useState("");
+
+
+    const [googleCredential, setGoogleCredential] =
+        React.useState("");
+
+    const [googleName, setGoogleName] =
+        React.useState("");
+
+    const [googleEmail, setGoogleEmail] =
+        React.useState("");
+
+    const [googleAvatar, setGoogleAvatar] =
+        React.useState("");
+
+
+    const [googleUsernameMode, setGoogleUsernameMode] =
+        React.useState(false);
+
+
+    const [formState, setFormState] =
+        React.useState(0);
+
+
+    const [open, setOpen] =
+        React.useState(false);
 
 
     const {
@@ -45,15 +75,19 @@ export default function Authentication() {
     } = React.useContext(AuthContext);
 
 
-    let handleAuth = async () => {
+    const handleAuth = async () => {
 
         try {
 
             if (formState === 0) {
 
-                let result = await handleLogin(username, password);
+                await handleLogin(
+                    username,
+                    password
+                );
 
             }
+
 
             if (formState === 1) {
 
@@ -70,10 +104,10 @@ export default function Authentication() {
                 setEmail("");
                 setMessage(result);
                 setOpen(true);
-                setError("")
-                setFormState(0)
-                setPassword("")
-                setName("")
+                setError("");
+                setFormState(0);
+                setPassword("");
+                setName("");
 
             }
 
@@ -81,14 +115,20 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message = (err.response?.data?.message || "Something went wrong");
+            let message =
+                err.response?.data?.message ||
+                "Something went wrong";
 
             setError(message);
+
         }
+
     }
 
 
-    const handleGoogleSuccess = async (credentialResponse) => {
+    const handleGoogleSuccess = async (
+        credentialResponse
+    ) => {
 
         try {
 
@@ -98,17 +138,25 @@ export default function Authentication() {
                 credentialResponse.credential
             );
 
+
             if (result.token) {
 
-                localStorage.setItem("token", result.token);
+                localStorage.setItem(
+                    "token",
+                    result.token
+                );
 
-                router("/home")
+                router("/home");
 
             }
 
+
             if (result.requiresUsername) {
 
-                setGoogleCredential(credentialResponse.credential);
+                setGoogleCredential(
+                    credentialResponse.credential
+                );
+
                 setGoogleName(result.name);
                 setGoogleEmail(result.email);
                 setGoogleAvatar(result.avatar);
@@ -121,14 +169,14 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message = (
+            let message =
                 err.response?.data?.message ||
-                "Google login failed"
-            );
+                "Google login failed";
 
             setError(message);
 
         }
+
     }
 
 
@@ -137,20 +185,30 @@ export default function Authentication() {
         try {
 
             if (!username) {
-                setError("Please choose a username")
+
+                setError(
+                    "Please choose a username"
+                );
+
                 return;
+
             }
+
 
             let result = await handleGoogleLogin(
                 googleCredential,
                 username
             );
 
+
             if (result.token) {
 
-                localStorage.setItem("token", result.token);
+                localStorage.setItem(
+                    "token",
+                    result.token
+                );
 
-                router("/home")
+                router("/home");
 
             }
 
@@ -158,22 +216,28 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message = (
+            let message =
                 err.response?.data?.message ||
-                "Something went wrong"
-            );
+                "Something went wrong";
 
             setError(message);
+
         }
+
     }
 
 
     return (
         <ThemeProvider theme={defaultTheme}>
 
-            <Grid container component="main" sx={{ height: '100vh' }}>
+            <Grid
+                container
+                component="main"
+                sx={{ height: '100vh' }}
+            >
 
                 <CssBaseline />
+
 
                 <Grid
                     item
@@ -181,16 +245,21 @@ export default function Authentication() {
                     sm={4}
                     md={7}
                     sx={{
-                        backgroundImage: 'url(https://source.unsplash.com/random?wallpapers)',
-                        backgroundRepeat: 'no-repeat',
+                        backgroundImage:
+                            'url(https://source.unsplash.com/random?wallpapers)',
+                        backgroundRepeat:
+                            'no-repeat',
                         backgroundColor: (t) =>
                             t.palette.mode === 'light'
                                 ? t.palette.grey[50]
                                 : t.palette.grey[900],
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
+                        backgroundSize:
+                            'cover',
+                        backgroundPosition:
+                            'center',
                     }}
                 />
+
 
                 <Grid
                     item
@@ -212,20 +281,30 @@ export default function Authentication() {
                         }}
                     >
 
-                        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+                        <Avatar
+                            sx={{
+                                m: 1,
+                                bgcolor:
+                                    'secondary.main'
+                            }}
+                        >
                             <LockOutlinedIcon />
                         </Avatar>
 
 
-                        {googleUsernameMode ?
+                        {googleUsernameMode ? (
 
                             <>
 
-                                <h2>Welcome to ApnaaZoom</h2>
+                                <h2>
+                                    Welcome to ApnaaZoom
+                                </h2>
 
                                 <p>
-                                    Choose your ApnaaZoom username
+                                    Choose your
+                                    ApnaaZoom username
                                 </p>
+
 
                                 <TextField
                                     margin="normal"
@@ -234,27 +313,40 @@ export default function Authentication() {
                                     label="Username"
                                     value={username}
                                     onChange={(e) =>
-                                        setUsername(e.target.value)
+                                        setUsername(
+                                            e.target.value
+                                        )
                                     }
                                 />
 
-                                <p style={{ color: "red" }}>
+
+                                <p
+                                    style={{
+                                        color: "red"
+                                    }}
+                                >
                                     {error}
                                 </p>
+
 
                                 <Button
                                     type="button"
                                     fullWidth
                                     variant="contained"
-                                    sx={{ mt: 3, mb: 2 }}
-                                    onClick={handleGoogleUsername}
+                                    sx={{
+                                        mt: 3,
+                                        mb: 2
+                                    }}
+                                    onClick={
+                                        handleGoogleUsername
+                                    }
                                 >
                                     Continue
                                 </Button>
 
                             </>
 
-                            :
+                        ) : (
 
                             <>
 
@@ -273,6 +365,7 @@ export default function Authentication() {
                                     >
                                         Sign In
                                     </Button>
+
 
                                     <Button
                                         variant={
@@ -300,7 +393,7 @@ export default function Authentication() {
                                     }}
                                 >
 
-                                    {formState === 1 ?
+                                    {formState === 1 ? (
 
                                         <TextField
                                             margin="normal"
@@ -312,14 +405,15 @@ export default function Authentication() {
                                             value={name}
                                             autoFocus
                                             onChange={(e) =>
-                                                setName(e.target.value)
+                                                setName(
+                                                    e.target.value
+                                                )
                                             }
                                         />
 
-                                        :
-
+                                    ) : (
                                         <></>
-                                    }
+                                    )}
 
 
                                     <TextField
@@ -330,14 +424,18 @@ export default function Authentication() {
                                         label="Username"
                                         name="username"
                                         value={username}
-                                        autoFocus={formState === 0}
+                                        autoFocus={
+                                            formState === 0
+                                        }
                                         onChange={(e) =>
-                                            setUsername(e.target.value)
+                                            setUsername(
+                                                e.target.value
+                                            )
                                         }
                                     />
 
 
-                                    {formState === 1 ?
+                                    {formState === 1 ? (
 
                                         <TextField
                                             margin="normal"
@@ -349,14 +447,15 @@ export default function Authentication() {
                                             type="email"
                                             value={email}
                                             onChange={(e) =>
-                                                setEmail(e.target.value)
+                                                setEmail(
+                                                    e.target.value
+                                                )
                                             }
                                         />
 
-                                        :
-
+                                    ) : (
                                         <></>
-                                    }
+                                    )}
 
 
                                     <TextField
@@ -368,13 +467,19 @@ export default function Authentication() {
                                         value={password}
                                         type="password"
                                         onChange={(e) =>
-                                            setPassword(e.target.value)
+                                            setPassword(
+                                                e.target.value
+                                            )
                                         }
                                         id="password"
                                     />
 
 
-                                    <p style={{ color: "red" }}>
+                                    <p
+                                        style={{
+                                            color: "red"
+                                        }}
+                                    >
                                         {error}
                                     </p>
 
@@ -383,7 +488,10 @@ export default function Authentication() {
                                         type="button"
                                         fullWidth
                                         variant="contained"
-                                        sx={{ mt: 3, mb: 2 }}
+                                        sx={{
+                                            mt: 3,
+                                            mb: 2
+                                        }}
                                         onClick={handleAuth}
                                     >
                                         {formState === 0
@@ -395,7 +503,8 @@ export default function Authentication() {
                                     <Box
                                         sx={{
                                             display: "flex",
-                                            alignItems: "center",
+                                            alignItems:
+                                                "center",
                                             width: "100%",
                                             my: 2
                                         }}
@@ -405,24 +514,29 @@ export default function Authentication() {
                                             sx={{
                                                 flex: 1,
                                                 height: "1px",
-                                                backgroundColor: "#ddd"
+                                                backgroundColor:
+                                                    "#ddd"
                                             }}
                                         />
 
+
                                         <span
                                             style={{
-                                                margin: "0 10px",
+                                                margin:
+                                                    "0 10px",
                                                 color: "#777"
                                             }}
                                         >
                                             OR
                                         </span>
 
+
                                         <Box
                                             sx={{
                                                 flex: 1,
                                                 height: "1px",
-                                                backgroundColor: "#ddd"
+                                                backgroundColor:
+                                                    "#ddd"
                                             }}
                                         />
 
@@ -432,12 +546,15 @@ export default function Authentication() {
                                     <Box
                                         sx={{
                                             display: "flex",
-                                            justifyContent: "center"
+                                            justifyContent:
+                                                "center"
                                         }}
                                     >
 
                                         <GoogleLogin
-                                            onSuccess={handleGoogleSuccess}
+                                            onSuccess={
+                                                handleGoogleSuccess
+                                            }
                                             onError={() => {
                                                 setError(
                                                     "Google Login Failed"
@@ -451,7 +568,7 @@ export default function Authentication() {
 
                             </>
 
-                        }
+                        )}
 
                     </Box>
 

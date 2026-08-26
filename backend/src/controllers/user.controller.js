@@ -19,7 +19,10 @@ const login = async (req, res) => {
     }
 
     try {
-        const user = await User.findOne({ username });
+
+        const user = await User.findOne({
+            username: username
+        });
 
         if (!user) {
             return res.status(httpStatus.NOT_FOUND).json({
@@ -33,7 +36,10 @@ const login = async (req, res) => {
             })
         }
 
-        let isPasswordCorrect = await bcrypt.compare(password, user.password)
+        let isPasswordCorrect = await bcrypt.compare(
+            password,
+            user.password
+        )
 
         if (isPasswordCorrect) {
 
@@ -46,6 +52,7 @@ const login = async (req, res) => {
             let token = crypto.randomBytes(20).toString("hex");
 
             user.token = token;
+
             await user.save();
 
             return res.status(httpStatus.OK).json({
@@ -226,6 +233,7 @@ const googleLogin = async (req, res) => {
                 message: "Username must be 3-20 characters and contain only letters, numbers or underscore"
             })
         }
+
     }
 
     try {
@@ -302,6 +310,7 @@ const googleLogin = async (req, res) => {
             return res.status(httpStatus.OK).json({
                 token: token
             })
+
         }
 
 
@@ -369,21 +378,33 @@ const getUserHistory = async (req, res) => {
 
     const { token } = req.query;
 
+    if (!token) {
+        return res.status(httpStatus.UNAUTHORIZED).json({
+            message: "Authentication token is required"
+        })
+    }
+
     try {
 
         const user = await User.findOne({
             token: token
         });
 
+        if (!user) {
+            return res.status(httpStatus.UNAUTHORIZED).json({
+                message: "Invalid or expired token"
+            })
+        }
+
         const meetings = await Meeting.find({
             user_id: user.username
         })
 
-        res.json(meetings)
+        res.status(httpStatus.OK).json(meetings)
 
     } catch (e) {
 
-        res.json({
+        res.status(500).json({
             message: `Something went wrong ${e}`
         })
 
@@ -396,11 +417,23 @@ const addToHistory = async (req, res) => {
 
     const { token, meeting_code } = req.body;
 
+    if (!token || !meeting_code) {
+        return res.status(400).json({
+            message: "Please Provide"
+        })
+    }
+
     try {
 
         const user = await User.findOne({
             token: token
         });
+
+        if (!user) {
+            return res.status(httpStatus.UNAUTHORIZED).json({
+                message: "Invalid or expired token"
+            })
+        }
 
         const newMeeting = new Meeting({
             user_id: user.username,
@@ -415,7 +448,7 @@ const addToHistory = async (req, res) => {
 
     } catch (e) {
 
-        res.json({
+        res.status(500).json({
             message: `Something went wrong ${e}`
         })
 

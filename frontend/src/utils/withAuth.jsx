@@ -11,77 +11,103 @@ const withAuth = (WrappedComponent) => {
 
         const router = useNavigate();
 
-        const [loading, setLoading] =
+        const [checkingAuth, setCheckingAuth] =
             useState(true);
-
-
-        const checkAuthentication = async () => {
-
-            const token =
-                localStorage.getItem("token");
-
-
-            if (!token) {
-
-                router("/auth");
-
-                return;
-
-            }
-
-
-            try {
-
-                await axios.get(
-                    `${server}/api/v1/users/validate-session`,
-                    {
-                        params: {
-                            token: token
-                        }
-                    }
-                );
-
-                setLoading(false);
-
-            } catch (err) {
-
-                console.log(
-                    "Authentication failed",
-                    err
-                );
-
-                localStorage.removeItem(
-                    "token"
-                );
-
-                router("/auth");
-
-            }
-
-        }
 
 
         useEffect(() => {
 
+            let isMounted = true;
+
+
+            const checkAuthentication = async () => {
+
+                const token =
+                    localStorage.getItem("token");
+
+
+                if (!token) {
+
+                    router("/auth", {
+                        replace: true
+                    });
+
+                    return;
+
+                }
+
+
+                try {
+
+                    await axios.get(
+                        `${server}/api/v1/users/validate-session`,
+                        {
+                            params: {
+                                token
+                            }
+                        }
+                    );
+
+
+                    if (isMounted) {
+
+                        setCheckingAuth(false);
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "Session validation failed:",
+                        error
+                    );
+
+
+                    localStorage.removeItem(
+                        "token"
+                    );
+
+
+                    if (isMounted) {
+
+                        router("/auth", {
+                            replace: true
+                        });
+
+                    }
+
+                }
+
+            };
+
+
             checkAuthentication();
 
-        }, []);
+
+            return () => {
+
+                isMounted = false;
+
+            };
+
+        }, [router]);
 
 
-        if (loading) {
+        if (checkingAuth) {
 
             return (
                 <div
                     style={{
-                        height: "100vh",
+                        minHeight: "100vh",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center"
+                        justifyContent: "center",
+                        fontFamily: "Arial, sans-serif"
                     }}
                 >
-                    Loading...
+                    Checking your session...
                 </div>
-            )
+            );
 
         }
 
@@ -90,14 +116,14 @@ const withAuth = (WrappedComponent) => {
             <WrappedComponent
                 {...props}
             />
-        )
+        );
 
-    }
+    };
 
 
     return AuthComponent;
 
-}
+};
 
 
 export default withAuth;

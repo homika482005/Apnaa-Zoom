@@ -1,29 +1,9 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const smtpUser =
-    process.env.SMTP_USER;
-
-const smtpPass =
-    (process.env.SMTP_PASS || "")
-        .replace(/\s+/g, "");
-
-
-const transporter =
-    nodemailer.createTransport({
-
-        host: "smtp.gmail.com",
-
-        port: 465,
-
-        secure: true,
-
-        auth: {
-            user: smtpUser,
-            pass: smtpPass
-        }
-
-    });
+const FROM_EMAIL =
+    "ApnaaZoom <noreply@apnaazoom.publicvcm.com>";
 
 
 const sendVerificationEmail = async (
@@ -35,10 +15,9 @@ const sendVerificationEmail = async (
     const verificationLink =
         `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
+    await resend.emails.send({
 
-    await transporter.sendMail({
-
-        from: `ApnaaZoom <${smtpUser}>`,
+        from: FROM_EMAIL,
 
         to: email,
 
@@ -109,10 +88,9 @@ const sendPasswordResetEmail = async (
     const resetLink =
         `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
+    await resend.emails.send({
 
-    await transporter.sendMail({
-
-        from: `ApnaaZoom <${smtpUser}>`,
+        from: FROM_EMAIL,
 
         to: email,
 

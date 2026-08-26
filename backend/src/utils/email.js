@@ -3,17 +3,16 @@
 | Email Service
 |--------------------------------------------------------------------------
 |
-| ApnaaZoom now uses Google-only authentication.
+| ApnaaZoom uses Google authentication only.
 |
 | Email verification and password reset are no longer
-| required for authentication, so no email provider
-| is initialized here.
+| part of the authentication flow.
 |
 |--------------------------------------------------------------------------
 */
 
 
-const sendVerificationEmail = async () => {
+export const sendVerificationEmail = async () => {
 
     throw new Error(
         "Email verification is disabled. ApnaaZoom uses Google authentication."
@@ -22,16 +21,10 @@ const sendVerificationEmail = async () => {
 };
 
 
-const sendPasswordResetEmail = async () => {
+export const sendPasswordResetEmail = async () => {
 
     throw new Error(
         "Password reset is disabled. ApnaaZoom uses Google authentication."
     );
 
-};
-
-
-export {
-    sendVerificationEmail,
-    sendPasswordResetEmail
 };

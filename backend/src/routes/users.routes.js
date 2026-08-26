@@ -1,56 +1,58 @@
 import { Router } from "express";
 
 import {
-    addToHistory,
-    getUserHistory,
-    login,
-    register,
-    verifyEmail,
-    resendVerificationEmail,
     googleLogin,
-    forgotPassword,
-    resetPassword,
     logout,
-    validateSession
+    validateSession,
+    getUserHistory,
+    addToHistory
 } from "../controllers/user.controller.js";
 
 
 const router = Router();
 
 
-router.route("/login").post(login)
+/*
+|--------------------------------------------------------------------------
+| Google Authentication
+|--------------------------------------------------------------------------
+*/
 
-router.route("/register").post(register)
+router
+    .route("/google")
+    .post(googleLogin);
 
-router.route("/verify-email").get(verifyEmail)
 
-router.route("/resend-verification").post(
-    resendVerificationEmail
-)
+/*
+|--------------------------------------------------------------------------
+| Session
+|--------------------------------------------------------------------------
+*/
 
-router.route("/google").post(googleLogin)
+router
+    .route("/logout")
+    .post(logout);
 
-router.route("/forgot-password").post(
-    forgotPassword
-)
 
-router.route("/reset-password").post(
-    resetPassword
-)
+router
+    .route("/validate-session")
+    .get(validateSession);
 
-router.route("/logout").post(logout)
 
-router.route("/validate-session").get(
-    validateSession
-)
+/*
+|--------------------------------------------------------------------------
+| Meeting History
+|--------------------------------------------------------------------------
+*/
 
-router.route("/add_to_activity").post(
-    addToHistory
-)
+router
+    .route("/add_to_activity")
+    .post(addToHistory);
 
-router.route("/get_all_activity").get(
-    getUserHistory
-)
+
+router
+    .route("/get_all_activity")
+    .get(getUserHistory);
 
 
 export default router;

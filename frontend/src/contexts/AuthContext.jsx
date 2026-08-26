@@ -22,9 +22,8 @@ export const AuthProvider = ({ children }) => {
     const authContext = useContext(AuthContext);
 
 
-    const [userData, setUserData] = useState(
-        authContext
-    );
+    const [userData, setUserData] =
+        useState(authContext);
 
 
     const router = useNavigate();
@@ -50,7 +49,10 @@ export const AuthProvider = ({ children }) => {
             );
 
 
-            if (request.status === httpStatus.CREATED) {
+            if (
+                request.status ===
+                httpStatus.CREATED
+            ) {
 
                 return request.data.message;
 
@@ -81,18 +83,17 @@ export const AuthProvider = ({ children }) => {
             );
 
 
-            console.log(username)
-            console.log(request.data)
-
-
-            if (request.status === httpStatus.OK) {
+            if (
+                request.status ===
+                httpStatus.OK
+            ) {
 
                 localStorage.setItem(
                     "token",
                     request.data.token
                 );
 
-                router("/home")
+                router("/home");
 
             }
 
@@ -132,6 +133,118 @@ export const AuthProvider = ({ children }) => {
     }
 
 
+    const handleResendVerification = async (
+        email
+    ) => {
+
+        try {
+
+            let request = await client.post(
+                "/resend-verification",
+                {
+                    email: email
+                }
+            );
+
+
+            return request.data;
+
+        } catch (err) {
+
+            throw err;
+
+        }
+
+    }
+
+
+    const handleForgotPassword = async (
+        email
+    ) => {
+
+        try {
+
+            let request = await client.post(
+                "/forgot-password",
+                {
+                    email: email
+                }
+            );
+
+
+            return request.data;
+
+        } catch (err) {
+
+            throw err;
+
+        }
+
+    }
+
+
+    const handleResetPassword = async (
+        token,
+        password
+    ) => {
+
+        try {
+
+            let request = await client.post(
+                "/reset-password",
+                {
+                    token: token,
+                    password: password
+                }
+            );
+
+
+            return request.data;
+
+        } catch (err) {
+
+            throw err;
+
+        }
+
+    }
+
+
+    const handleLogout = async () => {
+
+        try {
+
+            const token =
+                localStorage.getItem("token");
+
+
+            await client.post(
+                "/logout",
+                {
+                    token: token
+                }
+            );
+
+
+        } catch (err) {
+
+            console.log(err);
+
+        } finally {
+
+            localStorage.removeItem(
+                "token"
+            );
+
+            setUserData({});
+
+            router("/auth");
+
+        }
+
+    }
+
+
     const getHistoryOfUser = async () => {
 
         try {
@@ -141,10 +254,13 @@ export const AuthProvider = ({ children }) => {
                 {
                     params: {
                         token:
-                            localStorage.getItem("token")
+                            localStorage.getItem(
+                                "token"
+                            )
                     }
                 }
             );
+
 
             return request.data;
 
@@ -167,17 +283,21 @@ export const AuthProvider = ({ children }) => {
                 "/add_to_activity",
                 {
                     token:
-                        localStorage.getItem("token"),
+                        localStorage.getItem(
+                            "token"
+                        ),
 
-                    meeting_code: meetingCode
+                    meeting_code:
+                        meetingCode
                 }
             );
 
+
             return request;
 
-        } catch (e) {
+        } catch (err) {
 
-            throw e;
+            throw err;
 
         }
 
@@ -190,21 +310,31 @@ export const AuthProvider = ({ children }) => {
 
         setUserData,
 
-        addToUserHistory,
-
-        getHistoryOfUser,
-
         handleRegister,
 
         handleLogin,
 
-        handleGoogleLogin
+        handleGoogleLogin,
 
-    }
+        handleResendVerification,
+
+        handleForgotPassword,
+
+        handleResetPassword,
+
+        handleLogout,
+
+        getHistoryOfUser,
+
+        addToUserHistory
+
+    };
 
 
     return (
-        <AuthContext.Provider value={data}>
+        <AuthContext.Provider
+            value={data}
+        >
             {children}
         </AuthContext.Provider>
     )

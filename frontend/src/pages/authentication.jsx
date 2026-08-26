@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -7,14 +8,26 @@ import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+
 import {
     createTheme,
     ThemeProvider
 } from '@mui/material/styles';
+
+import {
+    Snackbar
+} from '@mui/material';
+
+import {
+    GoogleLogin
+} from '@react-oauth/google';
+
+import {
+    useNavigate
+} from 'react-router-dom';
+
 import { AuthContext } from '../contexts/AuthContext';
-import { Snackbar } from '@mui/material';
-import { GoogleLogin } from '@react-oauth/google';
-import { useNavigate } from 'react-router-dom';
+
 
 const defaultTheme = createTheme();
 
@@ -36,6 +49,7 @@ export default function Authentication() {
     const [email, setEmail] =
         React.useState("");
 
+
     const [error, setError] =
         React.useState("");
 
@@ -43,20 +57,7 @@ export default function Authentication() {
         React.useState("");
 
 
-    const [googleCredential, setGoogleCredential] =
-        React.useState("");
-
-    const [googleName, setGoogleName] =
-        React.useState("");
-
-    const [googleEmail, setGoogleEmail] =
-        React.useState("");
-
-    const [googleAvatar, setGoogleAvatar] =
-        React.useState("");
-
-
-    const [googleUsernameMode, setGoogleUsernameMode] =
+    const [open, setOpen] =
         React.useState(false);
 
 
@@ -64,20 +65,37 @@ export default function Authentication() {
         React.useState(0);
 
 
-    const [open, setOpen] =
+    const [googleCredential, setGoogleCredential] =
+        React.useState("");
+
+    const [googleUsernameMode, setGoogleUsernameMode] =
         React.useState(false);
 
 
     const {
         handleRegister,
         handleLogin,
-        handleGoogleLogin
+        handleGoogleLogin,
+        handleResendVerification,
+        handleForgotPassword
     } = React.useContext(AuthContext);
+
+
+    const showMessage = (value) => {
+
+        setMessage(value);
+
+        setOpen(true);
+
+    }
 
 
     const handleAuth = async () => {
 
         try {
+
+            setError("");
+
 
             if (formState === 0) {
 
@@ -86,6 +104,7 @@ export default function Authentication() {
                     password
                 );
 
+                return;
             }
 
 
@@ -98,16 +117,14 @@ export default function Authentication() {
                     password
                 );
 
-                console.log(result);
+                showMessage(result);
 
                 setUsername("");
                 setEmail("");
-                setMessage(result);
-                setOpen(true);
-                setError("");
-                setFormState(0);
                 setPassword("");
                 setName("");
+
+                setFormState(0);
 
             }
 
@@ -115,11 +132,10 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message =
+            setError(
                 err.response?.data?.message ||
-                "Something went wrong";
-
-            setError(message);
+                "Something went wrong"
+            );
 
         }
 
@@ -134,9 +150,10 @@ export default function Authentication() {
 
             setError("");
 
-            let result = await handleGoogleLogin(
-                credentialResponse.credential
-            );
+            let result =
+                await handleGoogleLogin(
+                    credentialResponse.credential
+                );
 
 
             if (result.token) {
@@ -148,6 +165,8 @@ export default function Authentication() {
 
                 router("/home");
 
+                return;
+
             }
 
 
@@ -157,10 +176,6 @@ export default function Authentication() {
                     credentialResponse.credential
                 );
 
-                setGoogleName(result.name);
-                setGoogleEmail(result.email);
-                setGoogleAvatar(result.avatar);
-
                 setGoogleUsernameMode(true);
 
             }
@@ -169,11 +184,10 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message =
+            setError(
                 err.response?.data?.message ||
-                "Google login failed";
-
-            setError(message);
+                "Google login failed"
+            );
 
         }
 
@@ -183,6 +197,9 @@ export default function Authentication() {
     const handleGoogleUsername = async () => {
 
         try {
+
+            setError("");
+
 
             if (!username) {
 
@@ -195,10 +212,11 @@ export default function Authentication() {
             }
 
 
-            let result = await handleGoogleLogin(
-                googleCredential,
-                username
-            );
+            let result =
+                await handleGoogleLogin(
+                    googleCredential,
+                    username
+                );
 
 
             if (result.token) {
@@ -216,13 +234,109 @@ export default function Authentication() {
 
             console.log(err);
 
-            let message =
+            setError(
                 err.response?.data?.message ||
-                "Something went wrong";
-
-            setError(message);
+                "Something went wrong"
+            );
 
         }
+
+    }
+
+
+    const handleForgot = async () => {
+
+        try {
+
+            setError("");
+
+
+            if (!email) {
+
+                setError(
+                    "Please enter your email"
+                );
+
+                return;
+
+            }
+
+
+            let result =
+                await handleForgotPassword(
+                    email
+                );
+
+
+            showMessage(
+                result.message
+            );
+
+
+        } catch (err) {
+
+            console.log(err);
+
+            setError(
+                err.response?.data?.message ||
+                "Something went wrong"
+            );
+
+        }
+
+    }
+
+
+    const handleResend = async () => {
+
+        try {
+
+            setError("");
+
+
+            if (!email) {
+
+                setError(
+                    "Please enter your email"
+                );
+
+                return;
+
+            }
+
+
+            let result =
+                await handleResendVerification(
+                    email
+                );
+
+
+            showMessage(
+                result.message
+            );
+
+
+        } catch (err) {
+
+            console.log(err);
+
+            setError(
+                err.response?.data?.message ||
+                "Something went wrong"
+            );
+
+        }
+
+    }
+
+
+    const resetForm = () => {
+
+        setUsername("");
+        setPassword("");
+        setName("");
+        setEmail("");
+        setError("");
 
     }
 
@@ -233,7 +347,9 @@ export default function Authentication() {
             <Grid
                 container
                 component="main"
-                sx={{ height: '100vh' }}
+                sx={{
+                    height: '100vh'
+                }}
             >
 
                 <CssBaseline />
@@ -276,8 +392,10 @@ export default function Authentication() {
                             my: 8,
                             mx: 4,
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
+                            flexDirection:
+                                'column',
+                            alignItems:
+                                'center',
                         }}
                     >
 
@@ -344,6 +462,85 @@ export default function Authentication() {
                                     Continue
                                 </Button>
 
+
+                                <Button
+                                    type="button"
+                                    fullWidth
+                                    onClick={() => {
+                                        setGoogleUsernameMode(
+                                            false
+                                        );
+
+                                        resetForm();
+                                    }}
+                                >
+                                    Back
+                                </Button>
+
+                            </>
+
+                        ) : formState === 2 ? (
+
+                            <>
+                                <h2>
+                                    Forgot Password
+                                </h2>
+
+
+                                <TextField
+                                    margin="normal"
+                                    required
+                                    fullWidth
+                                    label="Email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) =>
+                                        setEmail(
+                                            e.target.value
+                                        )
+                                    }
+                                />
+
+
+                                <p
+                                    style={{
+                                        color: "red"
+                                    }}
+                                >
+                                    {error}
+                                </p>
+
+
+                                <Button
+                                    type="button"
+                                    fullWidth
+                                    variant="contained"
+                                    sx={{
+                                        mt: 3,
+                                        mb: 2
+                                    }}
+                                    onClick={
+                                        handleForgot
+                                    }
+                                >
+                                    Send Reset Link
+                                </Button>
+
+
+                                <Button
+                                    type="button"
+                                    fullWidth
+                                    onClick={() => {
+
+                                        resetForm();
+
+                                        setFormState(0);
+
+                                    }}
+                                >
+                                    Back to Login
+                                </Button>
+
                             </>
 
                         ) : (
@@ -359,8 +556,11 @@ export default function Authentication() {
                                                 : ""
                                         }
                                         onClick={() => {
+
+                                            resetForm();
+
                                             setFormState(0);
-                                            setError("");
+
                                         }}
                                     >
                                         Sign In
@@ -374,8 +574,11 @@ export default function Authentication() {
                                                 : ""
                                         }
                                         onClick={() => {
+
+                                            resetForm();
+
                                             setFormState(1);
-                                            setError("");
+
                                         }}
                                     >
                                         Sign Up
@@ -393,7 +596,8 @@ export default function Authentication() {
                                     }}
                                 >
 
-                                    {formState === 1 ? (
+
+                                    {formState === 1 && (
 
                                         <TextField
                                             margin="normal"
@@ -411,8 +615,6 @@ export default function Authentication() {
                                             }
                                         />
 
-                                    ) : (
-                                        <></>
                                     )}
 
 
@@ -435,7 +637,7 @@ export default function Authentication() {
                                     />
 
 
-                                    {formState === 1 ? (
+                                    {formState === 1 && (
 
                                         <TextField
                                             margin="normal"
@@ -453,8 +655,6 @@ export default function Authentication() {
                                             }
                                         />
 
-                                    ) : (
-                                        <></>
                                     )}
 
 
@@ -492,12 +692,47 @@ export default function Authentication() {
                                             mt: 3,
                                             mb: 2
                                         }}
-                                        onClick={handleAuth}
+                                        onClick={
+                                            handleAuth
+                                        }
                                     >
-                                        {formState === 0
-                                            ? "Login"
-                                            : "Register"}
+                                        {
+                                            formState === 0
+                                                ? "Login"
+                                                : "Register"
+                                        }
                                     </Button>
+
+
+                                    {formState === 0 && (
+
+                                        <Box
+                                            sx={{
+                                                textAlign:
+                                                    "center",
+                                                mb: 2
+                                            }}
+                                        >
+
+                                            <Button
+                                                type="button"
+                                                size="small"
+                                                onClick={() => {
+
+                                                    resetForm();
+
+                                                    setFormState(
+                                                        2
+                                                    );
+
+                                                }}
+                                            >
+                                                Forgot Password?
+                                            </Button>
+
+                                        </Box>
+
+                                    )}
 
 
                                     <Box
@@ -524,7 +759,8 @@ export default function Authentication() {
                                             style={{
                                                 margin:
                                                     "0 10px",
-                                                color: "#777"
+                                                color:
+                                                    "#777"
                                             }}
                                         >
                                             OR
@@ -564,6 +800,31 @@ export default function Authentication() {
 
                                     </Box>
 
+
+                                    {formState === 1 && (
+
+                                        <Box
+                                            sx={{
+                                                textAlign:
+                                                    "center",
+                                                mt: 2
+                                            }}
+                                        >
+
+                                            <Button
+                                                type="button"
+                                                size="small"
+                                                onClick={
+                                                    handleResend
+                                                }
+                                            >
+                                                Resend Verification Email
+                                            </Button>
+
+                                        </Box>
+
+                                    )}
+
                                 </Box>
 
                             </>
@@ -581,6 +842,9 @@ export default function Authentication() {
                 open={open}
                 autoHideDuration={5000}
                 message={message}
+                onClose={() =>
+                    setOpen(false)
+                }
             />
 
         </ThemeProvider>

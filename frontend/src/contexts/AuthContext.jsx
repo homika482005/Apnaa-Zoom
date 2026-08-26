@@ -1,8 +1,6 @@
 import axios from "axios";
-import httpStatus from "http-status";
 import {
     createContext,
-    useContext,
     useState
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,112 +12,40 @@ export const AuthContext = createContext({});
 
 const client = axios.create({
     baseURL: `${server}/api/v1/users`
-})
+});
 
 
 export const AuthProvider = ({ children }) => {
 
-    const authContext = useContext(AuthContext);
-
-
     const [userData, setUserData] =
-        useState(authContext);
+        useState({});
 
 
     const router = useNavigate();
 
 
-    const handleRegister = async (
-        name,
-        username,
-        email,
-        password
+    const handleGoogleLogin = async (
+        credential
     ) => {
 
         try {
 
-            let request = await client.post(
-                "/register",
-                {
-                    name: name,
-                    username: username,
-                    email: email,
-                    password: password
-                }
-            );
+            if (!credential) {
 
-
-            if (
-                request.status ===
-                httpStatus.CREATED
-            ) {
-
-                return request.data.message;
-
-            }
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    }
-
-
-    const handleLogin = async (
-        username,
-        password
-    ) => {
-
-        try {
-
-            let request = await client.post(
-                "/login",
-                {
-                    username: username,
-                    password: password
-                }
-            );
-
-
-            if (
-                request.status ===
-                httpStatus.OK
-            ) {
-
-                localStorage.setItem(
-                    "token",
-                    request.data.token
+                throw new Error(
+                    "Google credential is missing"
                 );
 
-                router("/home");
-
             }
 
-        } catch (err) {
 
-            throw err;
-
-        }
-
-    }
-
-
-    const handleGoogleLogin = async (
-        credential,
-        username
-    ) => {
-
-        try {
-
-            let request = await client.post(
-                "/google",
-                {
-                    credential: credential,
-                    username: username
-                }
-            );
+            const request =
+                await client.post(
+                    "/google",
+                    {
+                        credential
+                    }
+                );
 
 
             return request.data;
@@ -130,84 +56,7 @@ export const AuthProvider = ({ children }) => {
 
         }
 
-    }
-
-
-    const handleResendVerification = async (
-        email
-    ) => {
-
-        try {
-
-            let request = await client.post(
-                "/resend-verification",
-                {
-                    email: email
-                }
-            );
-
-
-            return request.data;
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    }
-
-
-    const handleForgotPassword = async (
-        email
-    ) => {
-
-        try {
-
-            let request = await client.post(
-                "/forgot-password",
-                {
-                    email: email
-                }
-            );
-
-
-            return request.data;
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    }
-
-
-    const handleResetPassword = async (
-        token,
-        password
-    ) => {
-
-        try {
-
-            let request = await client.post(
-                "/reset-password",
-                {
-                    token: token,
-                    password: password
-                }
-            );
-
-
-            return request.data;
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    }
+    };
 
 
     const handleLogout = async () => {
@@ -218,17 +67,23 @@ export const AuthProvider = ({ children }) => {
                 localStorage.getItem("token");
 
 
-            await client.post(
-                "/logout",
-                {
-                    token: token
-                }
-            );
+            if (token) {
 
+                await client.post(
+                    "/logout",
+                    {
+                        token
+                    }
+                );
+
+            }
 
         } catch (err) {
 
-            console.log(err);
+            console.error(
+                "Logout error:",
+                err
+            );
 
         } finally {
 
@@ -242,24 +97,26 @@ export const AuthProvider = ({ children }) => {
 
         }
 
-    }
+    };
 
 
     const getHistoryOfUser = async () => {
 
         try {
 
-            let request = await client.get(
-                "/get_all_activity",
-                {
-                    params: {
-                        token:
-                            localStorage.getItem(
-                                "token"
-                            )
+            const token =
+                localStorage.getItem("token");
+
+
+            const request =
+                await client.get(
+                    "/get_all_activity",
+                    {
+                        params: {
+                            token
+                        }
                     }
-                }
-            );
+                );
 
 
             return request.data;
@@ -270,7 +127,7 @@ export const AuthProvider = ({ children }) => {
 
         }
 
-    }
+    };
 
 
     const addToUserHistory = async (
@@ -279,18 +136,20 @@ export const AuthProvider = ({ children }) => {
 
         try {
 
-            let request = await client.post(
-                "/add_to_activity",
-                {
-                    token:
-                        localStorage.getItem(
-                            "token"
-                        ),
+            const token =
+                localStorage.getItem("token");
 
-                    meeting_code:
-                        meetingCode
-                }
-            );
+
+            const request =
+                await client.post(
+                    "/add_to_activity",
+                    {
+                        token,
+
+                        meeting_code:
+                            meetingCode
+                    }
+                );
 
 
             return request;
@@ -301,7 +160,7 @@ export const AuthProvider = ({ children }) => {
 
         }
 
-    }
+    };
 
 
     const data = {
@@ -310,17 +169,7 @@ export const AuthProvider = ({ children }) => {
 
         setUserData,
 
-        handleRegister,
-
-        handleLogin,
-
         handleGoogleLogin,
-
-        handleResendVerification,
-
-        handleForgotPassword,
-
-        handleResetPassword,
 
         handleLogout,
 
@@ -337,6 +186,6 @@ export const AuthProvider = ({ children }) => {
         >
             {children}
         </AuthContext.Provider>
-    )
+    );
 
-}
+};

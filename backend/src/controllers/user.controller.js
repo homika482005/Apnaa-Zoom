@@ -99,7 +99,6 @@
 //     } catch (e) {
 //         res.json({ message: `Something went wrong ${e}` })
 
-
 import httpStatus from "http-status";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcrypt"
@@ -229,6 +228,52 @@ const register = async (req, res) => {
 }
 
 
+const verifyEmail = async (req, res) => {
+
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).json({
+            message: "Verification token is required"
+        })
+    }
+
+    try {
+
+        const hashedVerificationToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        const user = await User.findOne({
+            verificationToken: hashedVerificationToken,
+            verificationTokenExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                message: "Invalid or expired verification link"
+            })
+        }
+
+        user.emailVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpires = undefined;
+
+        await user.save();
+
+        res.status(httpStatus.OK).json({
+            message: "Email verified successfully"
+        })
+
+    } catch (e) {
+        res.status(500).json({
+            message: `Something went wrong ${e}`
+        })
+    }
+}
+
+
 const getUserHistory = async (req, res) => {
     const { token } = req.query;
 
@@ -270,11 +315,10 @@ const addToHistory = async (req, res) => {
 export {
     login,
     register,
+    verifyEmail,
     getUserHistory,
     addToHistory
-}
-//     }
-// }
+}  
 
 
-// export { login, register, getUserHistory, addToHistory }
+

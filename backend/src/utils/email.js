@@ -1,8 +1,29 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(
-    process.env.RESEND_API_KEY
-);
+
+const smtpUser =
+    process.env.SMTP_USER;
+
+const smtpPass =
+    (process.env.SMTP_PASS || "")
+        .replace(/\s+/g, "");
+
+
+const transporter =
+    nodemailer.createTransport({
+
+        host: "smtp.gmail.com",
+
+        port: 465,
+
+        secure: true,
+
+        auth: {
+            user: smtpUser,
+            pass: smtpPass
+        }
+
+    });
 
 
 const sendVerificationEmail = async (
@@ -15,50 +36,68 @@ const sendVerificationEmail = async (
         `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
 
-    const result = await resend.emails.send({
+    await transporter.sendMail({
 
-        from:
-            "ApnaaZoom <onboarding@resend.dev>",
+        from: `ApnaaZoom <${smtpUser}>`,
 
-        to:
-            email,
+        to: email,
 
         subject:
             "Verify your ApnaaZoom account",
 
         html: `
-            <h2>
-                Welcome to ApnaaZoom, ${name}
-            </h2>
 
-            <p>
-                Please verify your email address
-                to activate your account.
-            </p>
+            <div
+                style="
+                    font-family: Arial, sans-serif;
+                    max-width: 600px;
+                    margin: auto;
+                    padding: 30px;
+                "
+            >
 
-            <p>
-                <a href="${verificationLink}">
-                    Verify Email
-                </a>
-            </p>
+                <h2>
+                    Welcome to ApnaaZoom, ${name}
+                </h2>
 
-            <p>
-                This verification link will expire
-                in 15 minutes.
-            </p>
+                <p>
+                    Please verify your email address
+                    to activate your ApnaaZoom account.
+                </p>
+
+                <p>
+                    <a
+                        href="${verificationLink}"
+                        style="
+                            display: inline-block;
+                            padding: 12px 20px;
+                            background: #1976d2;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 5px;
+                        "
+                    >
+                        Verify Email
+                    </a>
+                </p>
+
+                <p>
+                    This verification link will expire
+                    in 15 minutes.
+                </p>
+
+                <p>
+                    If you did not create this account,
+                    you can safely ignore this email.
+                </p>
+
+            </div>
+
         `
+
     });
 
-
-    if (result.error) {
-
-        throw new Error(
-            result.error.message
-        );
-
-    }
-
-}
+};
 
 
 const sendPasswordResetEmail = async (
@@ -71,55 +110,68 @@ const sendPasswordResetEmail = async (
         `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
 
-    const result = await resend.emails.send({
+    await transporter.sendMail({
 
-        from:
-            "ApnaaZoom <onboarding@resend.dev>",
+        from: `ApnaaZoom <${smtpUser}>`,
 
-        to:
-            email,
+        to: email,
 
         subject:
             "Reset your ApnaaZoom password",
 
         html: `
-            <h2>
-                Hello ${name}
-            </h2>
 
-            <p>
-                We received a request to reset
-                your ApnaaZoom password.
-            </p>
+            <div
+                style="
+                    font-family: Arial, sans-serif;
+                    max-width: 600px;
+                    margin: auto;
+                    padding: 30px;
+                "
+            >
 
-            <p>
-                <a href="${resetLink}">
-                    Reset Password
-                </a>
-            </p>
+                <h2>
+                    Hello ${name}
+                </h2>
 
-            <p>
-                This password reset link will expire
-                in 15 minutes.
-            </p>
+                <p>
+                    We received a request to reset
+                    your ApnaaZoom password.
+                </p>
 
-            <p>
-                If you did not request a password reset,
-                you can safely ignore this email.
-            </p>
+                <p>
+                    <a
+                        href="${resetLink}"
+                        style="
+                            display: inline-block;
+                            padding: 12px 20px;
+                            background: #1976d2;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 5px;
+                        "
+                    >
+                        Reset Password
+                    </a>
+                </p>
+
+                <p>
+                    This password reset link will expire
+                    in 15 minutes.
+                </p>
+
+                <p>
+                    If you did not request a password reset,
+                    you can safely ignore this email.
+                </p>
+
+            </div>
+
         `
+
     });
 
-
-    if (result.error) {
-
-        throw new Error(
-            result.error.message
-        );
-
-    }
-
-}
+};
 
 
 export {

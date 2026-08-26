@@ -80,6 +80,14 @@ const register = async (req, res) => {
         })
     }
 
+    const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
+
+    if (!usernamePattern.test(username)) {
+        return res.status(400).json({
+            message: "Username must be 3-20 characters and contain only letters, numbers or underscore"
+        })
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
 
     try {
@@ -207,6 +215,17 @@ const googleLogin = async (req, res) => {
         return res.status(400).json({
             message: "Google credential is required"
         })
+    }
+
+    if (username) {
+
+        const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
+
+        if (!usernamePattern.test(username)) {
+            return res.status(400).json({
+                message: "Username must be 3-20 characters and contain only letters, numbers or underscore"
+            })
+        }
     }
 
     try {

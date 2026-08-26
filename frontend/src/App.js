@@ -1,14 +1,14 @@
 import './App.css';
+
 import {
-  Route,
-  BrowserRouter as Router,
-  Routes
+    Route,
+    BrowserRouter as Router,
+    Routes
 } from 'react-router-dom';
+
 
 import LandingPage from './pages/landing';
 import Authentication from './pages/authentication';
-import VerifyEmail from './pages/verify-email';
-import ResetPassword from './pages/reset-password';
 
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -19,58 +19,67 @@ import History from './pages/history';
 
 function App() {
 
-  return (
-    <div className="App">
+    return (
 
-      <Router>
+        <div className="App">
 
-        <AuthProvider>
+            <Router>
 
-          <Routes>
+                <AuthProvider>
 
-            <Route
-              path='/'
-              element={<LandingPage />}
-            />
+                    <Routes>
 
-            <Route
-              path='/auth'
-              element={<Authentication />}
-            />
+                        <Route
+                            path="/"
+                            element={
+                                <LandingPage />
+                            }
+                        />
 
-            <Route
-              path='/verify-email'
-              element={<VerifyEmail />}
-            />
 
-            <Route
-              path='/reset-password'
-              element={<ResetPassword />}
-            />
+                        <Route
+                            path="/auth"
+                            element={
+                                <Authentication />
+                            }
+                        />
 
-            <Route
-              path='/home'
-              element={<HomeComponent />}
-            />
 
-            <Route
-              path='/history'
-              element={<History />}
-            />
+                        <Route
+                            path="/home"
+                            element={
+                                <HomeComponent />
+                            }
+                        />
 
-            <Route
-              path='/:url'
-              element={<VideoMeetComponent />}
-            />
 
-          </Routes>
+                        <Route
+                            path="/history"
+                            element={
+                                <History />
+                            }
+                        />
 
-        </AuthProvider>
 
-      </Router>
+                        <Route
+                            path="/:url"
+                            element={
+                                <VideoMeetComponent />
+                            }
+                        />
 
-    </div>
-  );
+
+                    </Routes>
+
+                </AuthProvider>
+
+            </Router>
+
+        </div>
+
+    );
+
 }
+
 
 export default App;

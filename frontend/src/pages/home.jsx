@@ -1,79 +1,180 @@
-import React, { useContext, useState } from 'react'
+import React, {
+    useContext,
+    useState
+} from 'react'
+
 import withAuth from '../utils/withAuth'
+
 import { useNavigate } from 'react-router-dom'
+
 import "../App.css";
-import { Button, IconButton, TextField } from '@mui/material';
+
+import {
+    Button,
+    IconButton,
+    TextField
+} from '@mui/material';
+
 import RestoreIcon from '@mui/icons-material/Restore';
+
 import { AuthContext } from '../contexts/AuthContext';
+
 
 function HomeComponent() {
 
-
     let navigate = useNavigate();
-    const [meetingCode, setMeetingCode] = useState("");
+
+    const [meetingCode, setMeetingCode] =
+        useState("");
 
 
-    const {addToUserHistory} = useContext(AuthContext);
+    const {
+        addToUserHistory,
+        handleLogout
+    } = useContext(AuthContext);
+
+
     let handleJoinVideoCall = async () => {
-        await addToUserHistory(meetingCode)
-        navigate(`/${meetingCode}`)
+
+        if (!meetingCode) {
+            return;
+        }
+
+        await addToUserHistory(
+            meetingCode
+        );
+
+        navigate(`/${meetingCode}`);
+
     }
+
+
+    let handleLogoutUser = async () => {
+
+        await handleLogout();
+
+    }
+
 
     return (
         <>
 
             <div className="navBar">
 
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center"
+                    }}
+                >
 
-                    <h2>ApnaaZoom</h2>
+                    <h2>
+                        ApnaaZoom
+                    </h2>
 
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center" }}>
-                    <IconButton onClick={
-                        () => {
+
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center"
+                    }}
+                >
+
+                    <IconButton
+                        onClick={() => {
                             navigate("/history")
-                        }
-                    }>
+                        }}
+                    >
                         <RestoreIcon />
                     </IconButton>
-                    <p>History</p>
 
-                    <Button onClick={() => {
-                        localStorage.removeItem("token")
-                        navigate("/auth")
-                    }}>
+                    <p>
+                        History
+                    </p>
+
+
+                    <Button
+                        onClick={
+                            handleLogoutUser
+                        }
+                    >
                         Logout
                     </Button>
-                </div>
 
+                </div>
 
             </div>
 
 
             <div className="meetContainer">
+
                 <div className="leftPanel">
+
                     <div>
 
-                        <h2>Simple, Secure & Reliable Video Calls</h2>
-                        <p>Connect with anyone, anywhere, anytime.</p>
+                        <h2>
+                            Simple, Secure & Reliable Video Calls
+                        </h2>
 
-                        <div style={{ display: 'flex', gap: "10px" }}>
+                        <p>
+                            Connect with anyone, anywhere, anytime.
+                        </p>
 
-                            <TextField onChange={e => setMeetingCode(e.target.value)} id="outlined-basic" label="Meeting Code" variant="outlined" />
-                            <Button onClick={handleJoinVideoCall} variant='contained'>Join</Button>
+
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: "10px"
+                            }}
+                        >
+
+                            <TextField
+                                onChange={e =>
+                                    setMeetingCode(
+                                        e.target.value
+                                    )
+                                }
+                                id="outlined-basic"
+                                label="Meeting Code"
+                                variant="outlined"
+                            />
+
+
+                            <Button
+                                onClick={
+                                    handleJoinVideoCall
+                                }
+                                variant='contained'
+                            >
+                                Join
+                            </Button>
 
                         </div>
+
                     </div>
+
                 </div>
+
+
                 <div className='rightPanel'>
-                    <img srcSet='/logo3.png' alt="" />
+
+                    <img
+                        srcSet='/logo3.png'
+                        alt=""
+                    />
+
                 </div>
+
             </div>
+
         </>
     )
+
 }
 
 
-export default withAuth(HomeComponent)
+export default withAuth(
+    HomeComponent
+)

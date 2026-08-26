@@ -1,47 +1,59 @@
 import httpStatus from "http-status";
-import { User } from "../models/user.model.js";
-import bcrypt from "bcrypt"
-
-import crypto from "crypto"
+import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
+
+import { User } from "../models/user.model.js";
 import { Meeting } from "../models/meeting.model.js";
-import {
-    sendVerificationEmail,
-    sendPasswordResetEmail
-} from "../utils/email.js";
+
 
 const googleClient = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID
 );
 
 
-const SESSION_TIME = 7 * 24 * 60 * 60 * 1000;
-const VERIFICATION_TIME = 15 * 60 * 1000;
-const RESET_PASSWORD_TIME = 15 * 60 * 1000;
+const SESSION_TIME =
+    7 * 24 * 60 * 60 * 1000;
 
 
-const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
-
+/*
+|--------------------------------------------------------------------------
+| Create Session
+|--------------------------------------------------------------------------
+*/
 
 const createSession = async (user) => {
 
-    let token = crypto.randomBytes(32).toString("hex");
+    const token =
+        crypto.randomBytes(32).toString("hex");
+
 
     user.token = token;
 
-    user.tokenExpires = new Date(
-        Date.now() + SESSION_TIME
-    );
+    user.tokenExpires =
+        new Date(
+            Date.now() + SESSION_TIME
+        );
+
 
     await user.save();
 
-    return token;
-}
 
+    return token;
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Validate Session
+|--------------------------------------------------------------------------
+*/
 
 const validateSession = async (req, res) => {
 
-    const { token } = req.query;
+    const { token } =
+        req.query;
+
 
     if (!token) {
 
@@ -50,21 +62,21 @@ const validateSession = async (req, res) => {
         ).json({
             message:
                 "Authentication token is required"
-        })
+        });
 
     }
 
+
     try {
 
-        const user = await User.findOne({
+        const user =
+            await User.findOne({
+                token: token,
+                tokenExpires: {
+                    $gt: new Date()
+                }
+            });
 
-            token: token,
-
-            tokenExpires: {
-                $gt: new Date()
-            }
-
-        });
 
         if (!user) {
 
@@ -73,464 +85,69 @@ const validateSession = async (req, res) => {
             ).json({
                 message:
                     "Invalid or expired token"
-            })
+            });
 
         }
+
 
         return res.status(
             httpStatus.OK
         ).json({
             message:
                 "Session is valid"
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
-    }
-
-}
-
-
-const login = async (req, res) => {
-
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({
-            message: "Please Provide"
-        })
-    }
-
-    try {
-
-        const user = await User.findOne({
-            username: username
         });
 
-        if (!user) {
 
-            return res.status(
-                httpStatus.NOT_FOUND
-            ).json({
-                message:
-                    "User Not Found"
-            })
+    } catch (error) {
 
-        }
-
-        if (!user.password) {
-
-            return res.status(
-                httpStatus.UNAUTHORIZED
-            ).json({
-                message:
-                    "Please login using Google or reset your password"
-            })
-
-        }
-
-        let isPasswordCorrect =
-            await bcrypt.compare(
-                password,
-                user.password
-            )
-
-        if (!isPasswordCorrect) {
-
-            return res.status(
-                httpStatus.UNAUTHORIZED
-            ).json({
-                message:
-                    "Invalid Username or password"
-            })
-
-        }
-
-        if (
-            user.email &&
-            !user.emailVerified
-        ) {
-
-            return res.status(
-                httpStatus.UNAUTHORIZED
-            ).json({
-                message:
-                    "Please verify your email before login"
-            })
-
-        }
-
-        const token =
-            await createSession(user);
-
-        return res.status(
-            httpStatus.OK
-        ).json({
-            token: token
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
-    }
-}
-
-
-const register = async (req, res) => {
-
-    const {
-        name,
-        username,
-        email,
-        password
-    } = req.body;
-
-    if (
-        !name ||
-        !username ||
-        !email ||
-        !password
-    ) {
-
-        return res.status(400).json({
-            message:
-                "Please Provide All Details"
-        })
-
-    }
-
-    if (!usernamePattern.test(username)) {
-
-        return res.status(400).json({
-            message:
-                "Username must be 3-20 characters and contain only letters, numbers or underscore"
-        })
-
-    }
-
-    if (password.length < 6) {
-
-        return res.status(400).json({
-            message:
-                "Password must be at least 6 characters"
-        })
-
-    }
-
-    const normalizedEmail =
-        email.toLowerCase().trim();
-
-    try {
-
-        const existingUsername =
-            await User.findOne({
-                username: username
-            });
-
-        if (existingUsername) {
-
-            return res.status(
-                httpStatus.CONFLICT
-            ).json({
-                message:
-                    "Username already exists"
-            });
-
-        }
-
-        const existingEmail =
-            await User.findOne({
-                email: normalizedEmail
-            });
-
-        if (existingEmail) {
-
-            return res.status(
-                httpStatus.CONFLICT
-            ).json({
-                message:
-                    "Email already exists"
-            });
-
-        }
-
-        const hashedPassword =
-            await bcrypt.hash(
-                password,
-                10
-            );
-
-        const verificationToken =
-            crypto.randomBytes(32).toString("hex");
-
-        const hashedVerificationToken =
-            crypto
-                .createHash("sha256")
-                .update(verificationToken)
-                .digest("hex");
-
-        const newUser = new User({
-
-            name: name,
-
-            username: username,
-
-            email: normalizedEmail,
-
-            password: hashedPassword,
-
-            emailVerified: false,
-
-            verificationToken:
-                hashedVerificationToken,
-
-            verificationTokenExpires:
-                new Date(
-                    Date.now() +
-                    VERIFICATION_TIME
-                )
-
-        });
-
-        await newUser.save();
-
-        await sendVerificationEmail(
-            normalizedEmail,
-            name,
-            verificationToken
+        console.error(
+            "Session validation error:",
+            error
         );
 
-        return res.status(
-            httpStatus.CREATED
-        ).json({
-            message:
-                "User Registered. Please verify your email."
-        })
-
-    } catch (e) {
-
-        console.log(e);
 
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
             message:
-                `Something went wrong ${e}`
-        })
-
-    }
-
-}
-
-
-const verifyEmail = async (req, res) => {
-
-    const { token } = req.query;
-
-    if (!token) {
-
-        return res.status(400).json({
-            message:
-                "Verification token is required"
-        })
-
-    }
-
-    try {
-
-        const hashedVerificationToken =
-            crypto
-                .createHash("sha256")
-                .update(token)
-                .digest("hex");
-
-        const user = await User.findOne({
-
-            verificationToken:
-                hashedVerificationToken,
-
-            verificationTokenExpires: {
-                $gt: new Date()
-            }
-
+                "Something went wrong"
         });
 
-        if (!user) {
-
-            return res.status(
-                httpStatus.BAD_REQUEST
-            ).json({
-                message:
-                    "Invalid or expired verification link"
-            })
-
-        }
-
-        user.emailVerified = true;
-
-        user.verificationToken = undefined;
-
-        user.verificationTokenExpires = undefined;
-
-        await user.save();
-
-        return res.status(
-            httpStatus.OK
-        ).json({
-            message:
-                "Email verified successfully"
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
     }
 
-}
+};
 
 
-const resendVerificationEmail = async (
-    req,
-    res
-) => {
-
-    const { email } = req.body;
-
-    if (!email) {
-
-        return res.status(400).json({
-            message:
-                "Email is required"
-        })
-
-    }
-
-    const normalizedEmail =
-        email.toLowerCase().trim();
-
-    try {
-
-        const user = await User.findOne({
-            email: normalizedEmail
-        });
-
-        if (
-            !user ||
-            user.emailVerified
-        ) {
-
-            return res.status(
-                httpStatus.OK
-            ).json({
-                message:
-                    "If the account exists and needs verification, a new verification email has been sent."
-            })
-
-        }
-
-        const verificationToken =
-            crypto.randomBytes(32).toString("hex");
-
-        const hashedVerificationToken =
-            crypto
-                .createHash("sha256")
-                .update(verificationToken)
-                .digest("hex");
-
-        user.verificationToken =
-            hashedVerificationToken;
-
-        user.verificationTokenExpires =
-            new Date(
-                Date.now() +
-                VERIFICATION_TIME
-            );
-
-        await user.save();
-
-        await sendVerificationEmail(
-            normalizedEmail,
-            user.name,
-            verificationToken
-        );
-
-        return res.status(
-            httpStatus.OK
-        ).json({
-            message:
-                "If the account exists and needs verification, a new verification email has been sent."
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
-    }
-
-}
-
+/*
+|--------------------------------------------------------------------------
+| Google Login
+|--------------------------------------------------------------------------
+*/
 
 const googleLogin = async (req, res) => {
 
     const {
-        credential,
-        username
+        credential
     } = req.body;
+
 
     if (!credential) {
 
         return res.status(400).json({
             message:
                 "Google credential is required"
-        })
+        });
 
     }
 
-    if (
-        username &&
-        !usernamePattern.test(username)
-    ) {
-
-        return res.status(400).json({
-            message:
-                "Username must be 3-20 characters and contain only letters, numbers or underscore"
-        })
-
-    }
 
     try {
+
+        /*
+        --------------------------------------------------------------
+        Verify the Google ID token
+        --------------------------------------------------------------
+        */
 
         const ticket =
             await googleClient.verifyIdToken({
@@ -543,8 +160,10 @@ const googleLogin = async (req, res) => {
 
             });
 
+
         const payload =
             ticket.getPayload();
+
 
         if (!payload) {
 
@@ -553,9 +172,16 @@ const googleLogin = async (req, res) => {
             ).json({
                 message:
                     "Invalid Google credential"
-            })
+            });
 
         }
+
+
+        /*
+        --------------------------------------------------------------
+        Get Google account information
+        --------------------------------------------------------------
+        */
 
         const googleId =
             payload.sub;
@@ -564,18 +190,19 @@ const googleLogin = async (req, res) => {
             payload.email;
 
         const name =
-            payload.name;
+            payload.name ||
+            "ApnaaZoom User";
 
         const avatar =
-            payload.picture;
+            payload.picture || "";
 
         const emailVerified =
             payload.email_verified;
 
+
         if (
             !googleId ||
-            !email ||
-            !name
+            !email
         ) {
 
             return res.status(
@@ -583,9 +210,16 @@ const googleLogin = async (req, res) => {
             ).json({
                 message:
                     "Invalid Google account information"
-            })
+            });
 
         }
+
+
+        /*
+        --------------------------------------------------------------
+        Google must report the email as verified
+        --------------------------------------------------------------
+        */
 
         if (!emailVerified) {
 
@@ -594,110 +228,189 @@ const googleLogin = async (req, res) => {
             ).json({
                 message:
                     "Google email is not verified"
-            })
+            });
 
         }
 
-        const normalizedEmail =
-            email.toLowerCase().trim();
 
-        const existingGoogleUser =
+        const normalizedEmail =
+            email
+                .toLowerCase()
+                .trim();
+
+
+        /*
+        --------------------------------------------------------------
+        1. Try Google ID first
+        --------------------------------------------------------------
+        */
+
+        let user =
             await User.findOne({
                 googleId: googleId
             });
 
-        if (existingGoogleUser) {
 
-            existingGoogleUser.email =
-                normalizedEmail;
+        /*
+        --------------------------------------------------------------
+        2. If not found, try the email
+        --------------------------------------------------------------
+        */
 
-            existingGoogleUser.emailVerified =
-                true;
+        if (!user) {
 
-            existingGoogleUser.avatar =
-                avatar;
-
-            const token =
-                await createSession(
-                    existingGoogleUser
-                );
-
-            return res.status(
-                httpStatus.OK
-            ).json({
-                token: token
-            })
+            user =
+                await User.findOne({
+                    email:
+                        normalizedEmail
+                });
 
         }
 
-        const existingEmailUser =
-            await User.findOne({
-                email: normalizedEmail
-            });
 
-        if (existingEmailUser) {
+        /*
+        --------------------------------------------------------------
+        Existing user
+        --------------------------------------------------------------
+        */
 
-            existingEmailUser.googleId =
+        if (user) {
+
+            user.googleId =
                 googleId;
 
-            existingEmailUser.avatar =
+            user.email =
+                normalizedEmail;
+
+            user.name =
+                name;
+
+            user.avatar =
                 avatar;
 
-            existingEmailUser.emailVerified =
+            user.emailVerified =
                 true;
+
 
             const token =
                 await createSession(
-                    existingEmailUser
+                    user
                 );
 
-            return res.status(
-                httpStatus.OK
-            ).json({
-                token: token
-            })
-
-        }
-
-        if (!username) {
 
             return res.status(
                 httpStatus.OK
             ).json({
 
-                requiresUsername:
-                    true,
+                token:
 
-                name:
-                    name,
+                    token,
 
-                email:
-                    normalizedEmail,
+                user: {
 
-                avatar:
-                    avatar
+                    id:
+                        user._id,
 
-            })
+                    name:
+                        user.name,
 
-        }
+                    email:
+                        user.email,
 
-        const existingUsername =
-            await User.findOne({
-                username: username
+                    username:
+                        user.username,
+
+                    avatar:
+                        user.avatar
+
+                }
+
             });
 
-        if (existingUsername) {
+        }
 
-            return res.status(
-                httpStatus.CONFLICT
-            ).json({
-                message:
-                    "Username already exists"
-            })
+
+        /*
+        --------------------------------------------------------------
+        New Google user
+        --------------------------------------------------------------
+
+        We generate a unique username automatically.
+
+        No manual username screen.
+        --------------------------------------------------------------
+        */
+
+        let baseUsername =
+            normalizedEmail
+                .split("@")[0]
+                .replace(
+                    /[^a-zA-Z0-9_]/g,
+                    "_"
+                )
+                .toLowerCase();
+
+
+        if (baseUsername.length < 3) {
+
+            baseUsername =
+                "user";
 
         }
 
-        const newUser =
+
+        if (baseUsername.length > 20) {
+
+            baseUsername =
+                baseUsername.substring(
+                    0,
+                    20
+                );
+
+        }
+
+
+        let username =
+            baseUsername;
+
+
+        let counter = 1;
+
+
+        while (
+            await User.findOne({
+                username: username
+            })
+        ) {
+
+            const suffix =
+                String(counter);
+
+            const maxLength =
+                20 -
+                suffix.length;
+
+
+            username =
+                baseUsername.substring(
+                    0,
+                    maxLength
+                ) +
+                suffix;
+
+
+            counter++;
+
+        }
+
+
+        /*
+        --------------------------------------------------------------
+        Create user
+        --------------------------------------------------------------
+        */
+
+        user =
             new User({
 
                 name:
@@ -723,227 +436,83 @@ const googleLogin = async (req, res) => {
 
             });
 
+
+        await user.save();
+
+
+        /*
+        --------------------------------------------------------------
+        Create session
+        --------------------------------------------------------------
+        */
+
         const token =
             await createSession(
-                newUser
+                user
             );
+
 
         return res.status(
             httpStatus.CREATED
         ).json({
-            token: token
-        })
 
-    } catch (e) {
+            token:
+                token,
 
-        console.log(e);
+            user: {
+
+                id:
+                    user._id,
+
+                name:
+                    user.name,
+
+                email:
+                    user.email,
+
+                username:
+                    user.username,
+
+                avatar:
+                    user.avatar
+
+            }
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Google authentication error:",
+            error
+        );
+
 
         return res.status(
             httpStatus.UNAUTHORIZED
         ).json({
             message:
                 "Google authentication failed"
-        })
+        });
 
     }
 
-}
+};
 
 
-const forgotPassword = async (
-    req,
-    res
-) => {
-
-    const { email } = req.body;
-
-    if (!email) {
-
-        return res.status(400).json({
-            message:
-                "Email is required"
-        })
-
-    }
-
-    const normalizedEmail =
-        email.toLowerCase().trim();
-
-    try {
-
-        const user =
-            await User.findOne({
-                email: normalizedEmail
-            });
-
-        if (!user) {
-
-            return res.status(
-                httpStatus.OK
-            ).json({
-                message:
-                    "If an account with this email exists, a password reset email has been sent."
-            })
-
-        }
-
-        const resetToken =
-            crypto.randomBytes(32).toString("hex");
-
-        const hashedResetToken =
-            crypto
-                .createHash("sha256")
-                .update(resetToken)
-                .digest("hex");
-
-        user.resetPasswordToken =
-            hashedResetToken;
-
-        user.resetPasswordExpires =
-            new Date(
-                Date.now() +
-                RESET_PASSWORD_TIME
-            );
-
-        await user.save();
-
-        await sendPasswordResetEmail(
-            normalizedEmail,
-            user.name,
-            resetToken
-        );
-
-        return res.status(
-            httpStatus.OK
-        ).json({
-            message:
-                "If an account with this email exists, a password reset email has been sent."
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
-    }
-
-}
-
-
-const resetPassword = async (
-    req,
-    res
-) => {
-
-    const {
-        token,
-        password
-    } = req.body;
-
-    if (!token || !password) {
-
-        return res.status(400).json({
-            message:
-                "Token and password are required"
-        })
-
-    }
-
-    if (password.length < 6) {
-
-        return res.status(400).json({
-            message:
-                "Password must be at least 6 characters"
-        })
-
-    }
-
-    try {
-
-        const hashedResetToken =
-            crypto
-                .createHash("sha256")
-                .update(token)
-                .digest("hex");
-
-        const user =
-            await User.findOne({
-
-                resetPasswordToken:
-                    hashedResetToken,
-
-                resetPasswordExpires: {
-                    $gt: new Date()
-                }
-
-            });
-
-        if (!user) {
-
-            return res.status(
-                httpStatus.BAD_REQUEST
-            ).json({
-                message:
-                    "Invalid or expired password reset link"
-            })
-
-        }
-
-        const hashedPassword =
-            await bcrypt.hash(
-                password,
-                10
-            );
-
-        user.password =
-            hashedPassword;
-
-        user.resetPasswordToken =
-            undefined;
-
-        user.resetPasswordExpires =
-            undefined;
-
-        user.token =
-            undefined;
-
-        user.tokenExpires =
-            undefined;
-
-        await user.save();
-
-        return res.status(
-            httpStatus.OK
-        ).json({
-            message:
-                "Password reset successfully. Please login again."
-        })
-
-    } catch (e) {
-
-        console.log(e);
-
-        return res.status(
-            httpStatus.INTERNAL_SERVER_ERROR
-        ).json({
-            message:
-                `Something went wrong ${e}`
-        })
-
-    }
-
-}
-
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
 
 const logout = async (req, res) => {
 
-    const { token } = req.body;
+    const {
+        token
+    } = req.body;
+
 
     if (!token) {
 
@@ -952,9 +521,10 @@ const logout = async (req, res) => {
         ).json({
             message:
                 "Logged out successfully"
-        })
+        });
 
     }
+
 
     try {
 
@@ -962,6 +532,7 @@ const logout = async (req, res) => {
             await User.findOne({
                 token: token
             });
+
 
         if (user) {
 
@@ -971,39 +542,55 @@ const logout = async (req, res) => {
             user.tokenExpires =
                 undefined;
 
+
             await user.save();
 
         }
+
 
         return res.status(
             httpStatus.OK
         ).json({
             message:
                 "Logged out successfully"
-        })
+        });
 
-    } catch (e) {
 
-        console.log(e);
+    } catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
 
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
             message:
-                `Something went wrong ${e}`
-        })
+                "Something went wrong"
+        });
 
     }
 
-}
+};
 
+
+/*
+|--------------------------------------------------------------------------
+| Get User History
+|--------------------------------------------------------------------------
+*/
 
 const getUserHistory = async (
     req,
     res
 ) => {
 
-    const { token } = req.query;
+    const {
+        token
+    } = req.query;
+
 
     if (!token) {
 
@@ -1012,22 +599,26 @@ const getUserHistory = async (
         ).json({
             message:
                 "Authentication token is required"
-        })
+        });
 
     }
+
 
     try {
 
         const user =
             await User.findOne({
 
-                token: token,
+                token:
+                    token,
 
                 tokenExpires: {
-                    $gt: new Date()
+                    $gt:
+                        new Date()
                 }
 
             });
+
 
         if (!user) {
 
@@ -1036,35 +627,52 @@ const getUserHistory = async (
             ).json({
                 message:
                     "Invalid or expired token"
-            })
+            });
 
         }
 
+
         const meetings =
             await Meeting.find({
+
                 user_id:
                     user.username
+
             });
+
 
         return res.status(
             httpStatus.OK
-        ).json(meetings)
+        ).json(
+            meetings
+        );
 
-    } catch (e) {
 
-        console.log(e);
+    } catch (error) {
+
+        console.error(
+            "Get history error:",
+            error
+        );
+
 
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
             message:
-                `Something went wrong ${e}`
-        })
+                "Something went wrong"
+        });
 
     }
 
-}
+};
 
+
+/*
+|--------------------------------------------------------------------------
+| Add To User History
+|--------------------------------------------------------------------------
+*/
 
 const addToHistory = async (
     req,
@@ -1076,27 +684,35 @@ const addToHistory = async (
         meeting_code
     } = req.body;
 
-    if (!token || !meeting_code) {
+
+    if (
+        !token ||
+        !meeting_code
+    ) {
 
         return res.status(400).json({
             message:
-                "Please Provide"
-        })
+                "Token and meeting code are required"
+        });
 
     }
+
 
     try {
 
         const user =
             await User.findOne({
 
-                token: token,
+                token:
+                    token,
 
                 tokenExpires: {
-                    $gt: new Date()
+                    $gt:
+                        new Date()
                 }
 
             });
+
 
         if (!user) {
 
@@ -1105,9 +721,10 @@ const addToHistory = async (
             ).json({
                 message:
                     "Invalid or expired token"
-            })
+            });
 
         }
+
 
         const newMeeting =
             new Meeting({
@@ -1120,41 +737,54 @@ const addToHistory = async (
 
             });
 
+
         await newMeeting.save();
+
 
         return res.status(
             httpStatus.CREATED
         ).json({
             message:
                 "Added code to history"
-        })
+        });
 
-    } catch (e) {
 
-        console.log(e);
+    } catch (error) {
+
+        console.error(
+            "Add history error:",
+            error
+        );
+
 
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
             message:
-                `Something went wrong ${e}`
-        })
+                "Something went wrong"
+        });
 
     }
 
-}
+};
 
+
+/*
+|--------------------------------------------------------------------------
+| Exports
+|--------------------------------------------------------------------------
+*/
 
 export {
-    login,
-    register,
-    verifyEmail,
-    resendVerificationEmail,
+
     googleLogin,
-    forgotPassword,
-    resetPassword,
+
     logout,
+
     validateSession,
+
     getUserHistory,
+
     addToHistory
-}
+
+};

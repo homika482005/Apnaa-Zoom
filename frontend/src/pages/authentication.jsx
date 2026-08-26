@@ -11,10 +11,13 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { AuthContext } from '../contexts/AuthContext';
 import { Snackbar } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
 
 const defaultTheme = createTheme();
 
 export default function Authentication() {
+
+    const router = useNavigate();
 
     const [username, setUsername] = React.useState();
     const [password, setPassword] = React.useState();

@@ -8,6 +8,7 @@ import {
 import LandingPage from './pages/landing';
 import Authentication from './pages/authentication';
 import VerifyEmail from './pages/verify-email';
+import ResetPassword from './pages/reset-password';
 
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -40,6 +41,11 @@ function App() {
             <Route
               path='/verify-email'
               element={<VerifyEmail />}
+            />
+
+            <Route
+              path='/reset-password'
+              element={<ResetPassword />}
             />
 
             <Route

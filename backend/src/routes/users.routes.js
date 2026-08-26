@@ -10,7 +10,8 @@ import {
     googleLogin,
     forgotPassword,
     resetPassword,
-    logout
+    logout,
+    validateSession
 } from "../controllers/user.controller.js";
 
 
@@ -38,6 +39,10 @@ router.route("/reset-password").post(
 )
 
 router.route("/logout").post(logout)
+
+router.route("/validate-session").get(
+    validateSession
+)
 
 router.route("/add_to_activity").post(
     addToHistory

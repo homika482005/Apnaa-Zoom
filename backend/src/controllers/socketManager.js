@@ -1,9 +1,10 @@
 import { Server } from "socket.io";
 import { User } from "../models/user.model.js";
 
-let connections = {}
-let messages = {}
-let timeOnline = {}
+
+const connections = {};
+const messages = {};
+const timeOnline = {};
 
 
 export const connectToSocket = (server) => {
@@ -15,28 +16,37 @@ export const connectToSocket = (server) => {
                 "https://apnaazoom-frontend.onrender.com",
                 "http://localhost:3000"
             ],
-            methods: ["GET", "POST"],
+            methods: [
+                "GET",
+                "POST"
+            ],
             credentials: true
         }
 
     });
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Socket Authentication
+    |--------------------------------------------------------------------------
+    */
+
     io.use(async (socket, next) => {
 
         try {
 
             const token =
-                socket.handshake.auth.token;
+                socket.handshake.auth?.token;
 
 
             if (!token) {
 
                 return next(
                     new Error(
-                        "Authentication token is required"
+                        "Authentication required"
                     )
-                )
+                );
 
             }
 
@@ -59,7 +69,7 @@ export const connectToSocket = (server) => {
                     new Error(
                         "Invalid or expired session"
                     )
-                )
+                );
 
             }
 
@@ -68,159 +78,238 @@ export const connectToSocket = (server) => {
 
             next();
 
-        } catch (e) {
 
-            console.log(
+        } catch (error) {
+
+            console.error(
                 "Socket authentication error:",
-                e
+                error
             );
 
-            return next(
+
+            next(
                 new Error(
                     "Socket authentication failed"
                 )
-            )
+            );
 
         }
 
     });
 
 
-    io.on("connection", (socket) => {
+    /*
+    |--------------------------------------------------------------------------
+    | Authenticated Connection
+    |--------------------------------------------------------------------------
+    */
 
-        console.log(
-            "AUTHENTICATED SOCKET CONNECTED:",
-            socket.id
-        );
+    io.on(
+        "connection",
+        (socket) => {
 
-
-        socket.on("join-call", (path) => {
-
-            if (connections[path] === undefined) {
-                connections[path] = []
-            }
-
-
-            if (
-                !connections[path].includes(
-                    socket.id
-                )
-            ) {
-
-                connections[path].push(
-                    socket.id
-                )
-
-            }
+            console.log(
+                "Authenticated socket connected:",
+                socket.id,
+                "User:",
+                socket.user?.email
+            );
 
 
-            timeOnline[socket.id] =
-                new Date();
+            /*
+            |--------------------------------------------------------------------------
+            | Join Call
+            |--------------------------------------------------------------------------
+            */
+
+            socket.on(
+                "join-call",
+                (path) => {
+
+                    if (!path) {
+                        return;
+                    }
 
 
-            for (
-                let a = 0;
-                a < connections[path].length;
-                a++
-            ) {
+                    if (
+                        connections[path] ===
+                        undefined
+                    ) {
 
-                io.to(
-                    connections[path][a]
-                ).emit(
-                    "user-joined",
-                    socket.id,
-                    connections[path]
-                )
+                        connections[path] = [];
 
-            }
+                    }
 
 
-            if (messages[path] !== undefined) {
+                    if (
+                        !connections[path].includes(
+                            socket.id
+                        )
+                    ) {
 
-                for (
-                    let a = 0;
-                    a < messages[path].length;
-                    ++a
-                ) {
+                        connections[path].push(
+                            socket.id
+                        );
 
-                    io.to(socket.id).emit(
-                        "chat-message",
-                        messages[path][a]['data'],
-                        messages[path][a]['sender'],
-                        messages[path][a]['socket-id-sender']
-                    )
+                    }
+
+
+                    timeOnline[socket.id] =
+                        new Date();
+
+
+                    for (
+                        let i = 0;
+                        i < connections[path].length;
+                        i++
+                    ) {
+
+                        io.to(
+                            connections[path][i]
+                        ).emit(
+                            "user-joined",
+                            socket.id,
+                            connections[path]
+                        );
+
+                    }
+
+
+                    if (
+                        messages[path] !==
+                        undefined
+                    ) {
+
+                        for (
+                            let i = 0;
+                            i < messages[path].length;
+                            i++
+                        ) {
+
+                            io.to(
+                                socket.id
+                            ).emit(
+                                "chat-message",
+
+                                messages[path][i].data,
+
+                                messages[path][i].sender,
+
+                                messages[path][i][
+                                    "socket-id-sender"
+                                ]
+
+                            );
+
+                        }
+
+                    }
 
                 }
-
-            }
-
-        })
+            );
 
 
-        socket.on(
-            "signal",
-            (toId, message) => {
+            /*
+            |--------------------------------------------------------------------------
+            | WebRTC Signalling
+            |--------------------------------------------------------------------------
+            */
 
-                if (!toId || !message) {
-                    return;
-                }
-
-                io.to(toId).emit(
-                    "signal",
-                    socket.id,
+            socket.on(
+                "signal",
+                (
+                    toId,
                     message
-                );
+                ) => {
 
-            }
-        )
+                    if (
+                        !toId ||
+                        !message
+                    ) {
 
+                        return;
 
-        socket.on(
-            "chat-message",
-            (data, sender) => {
-
-                if (!data) {
-                    return;
-                }
+                    }
 
 
-                const [
-                    matchingRoom,
-                    found
-                ] = Object.entries(
-                    connections
-                )
-                    .reduce(
-                        (
-                            [room, isFound],
-                            [roomKey, roomValue]
-                        ) => {
-
-                            if (
-                                !isFound &&
-                                roomValue.includes(
-                                    socket.id
-                                )
-                            ) {
-
-                                return [
-                                    roomKey,
-                                    true
-                                ];
-
-                            }
-
-                            return [
-                                room,
-                                isFound
-                            ];
-
-                        },
-                        ['', false]
+                    io.to(
+                        toId
+                    ).emit(
+                        "signal",
+                        socket.id,
+                        message
                     );
 
+                }
+            );
 
-                if (found === true) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Chat
+            |--------------------------------------------------------------------------
+            */
+
+            socket.on(
+                "chat-message",
+                (
+                    data,
+                    sender
+                ) => {
+
+                    if (!data) {
+                        return;
+                    }
+
+
+                    const entries =
+                        Object.entries(
+                            connections
+                        );
+
+
+                    let matchingRoom =
+                        null;
+
+
+                    for (
+                        let i = 0;
+                        i < entries.length;
+                        i++
+                    ) {
+
+                        const [
+                            room,
+                            roomConnections
+                        ] =
+                            entries[i];
+
+
+                        if (
+                            roomConnections.includes(
+                                socket.id
+                            )
+                        ) {
+
+                            matchingRoom =
+                                room;
+
+                            break;
+
+                        }
+
+                    }
+
+
+                    if (
+                        matchingRoom ===
+                        null
+                    ) {
+
+                        return;
+
+                    }
+
 
                     if (
                         messages[
@@ -230,140 +319,162 @@ export const connectToSocket = (server) => {
 
                         messages[
                             matchingRoom
-                        ] = []
+                        ] = [];
 
                     }
 
 
-                    messages[
-                        matchingRoom
-                    ].push({
+                    const chatMessage = {
 
-                        sender: sender,
+                        sender:
+                            sender ||
+                            socket.user?.name ||
+                            "User",
 
-                        data: data,
+                        data:
+                            String(data),
 
                         "socket-id-sender":
                             socket.id
 
-                    })
+                    };
 
 
-                    console.log(
-                        "message",
-                        matchingRoom,
-                        ":",
-                        sender,
-                        data
-                    )
+                    messages[
+                        matchingRoom
+                    ].push(
+                        chatMessage
+                    );
 
 
                     connections[
                         matchingRoom
                     ].forEach(
-                        (elem) => {
+                        (socketId) => {
 
-                            io.to(elem).emit(
+                            io.to(
+                                socketId
+                            ).emit(
                                 "chat-message",
-                                data,
-                                sender,
+
+                                chatMessage.data,
+
+                                chatMessage.sender,
+
                                 socket.id
-                            )
+                            );
 
                         }
-                    )
+                    );
 
                 }
-
-            }
-        )
+            );
 
 
-        socket.on(
-            "disconnect",
-            () => {
+            /*
+            |--------------------------------------------------------------------------
+            | Disconnect
+            |--------------------------------------------------------------------------
+            */
 
-                console.log(
-                    "SOCKET DISCONNECTED:",
-                    socket.id
-                );
+            socket.on(
+                "disconnect",
+                () => {
+
+                    console.log(
+                        "Socket disconnected:",
+                        socket.id
+                    );
 
 
-                delete timeOnline[
-                    socket.id
-                ];
+                    delete timeOnline[
+                        socket.id
+                    ];
 
 
-                for (
-                    const [
-                        key,
-                        value
-                    ] of Object.entries(
-                        connections
-                    )
-                ) {
-
-                    if (
-                        value.includes(
-                            socket.id
+                    for (
+                        const [
+                            room,
+                            roomConnections
+                        ] of Object.entries(
+                            connections
                         )
                     ) {
 
-                        for (
-                            let a = 0;
-                            a < value.length;
-                            a++
-                        ) {
-
-                            io.to(
-                                value[a]
-                            ).emit(
-                                "user-left",
+                        if (
+                            !roomConnections.includes(
                                 socket.id
                             )
+                        ) {
+
+                            continue;
 
                         }
 
 
-                        const index =
-                            connections[key]
-                                .indexOf(
+                        roomConnections.forEach(
+                            (socketId) => {
+
+                                if (
+                                    socketId !==
                                     socket.id
-                                );
+                                ) {
+
+                                    io.to(
+                                        socketId
+                                    ).emit(
+                                        "user-left",
+                                        socket.id
+                                    );
+
+                                }
+
+                            }
+                        );
 
 
-                        if (index !== -1) {
+                        const index =
+                            roomConnections.indexOf(
+                                socket.id
+                            );
 
-                            connections[key]
-                                .splice(
-                                    index,
-                                    1
-                                )
+
+                        if (
+                            index !== -1
+                        ) {
+
+                            roomConnections.splice(
+                                index,
+                                1
+                            );
 
                         }
 
 
                         if (
-                            connections[key]
-                                .length === 0
+                            roomConnections.length ===
+                            0
                         ) {
 
                             delete connections[
-                                key
-                            ]
+                                room
+                            ];
+
+                            delete messages[
+                                room
+                            ];
 
                         }
 
                     }
 
                 }
+            );
 
-            }
-        )
-
-    })
+        }
+    );
 
 
     return io;
 
-}
+};

@@ -80,9 +80,13 @@ const register = async (req, res) => {
         })
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     try {
 
-        const existingUsername = await User.findOne({ username });
+        const existingUsername = await User.findOne({
+            username: username
+        });
 
         if (existingUsername) {
             return res.status(httpStatus.FOUND).json({
@@ -90,7 +94,9 @@ const register = async (req, res) => {
             });
         }
 
-        const existingEmail = await User.findOne({ email });
+        const existingEmail = await User.findOne({
+            email: normalizedEmail
+        });
 
         if (existingEmail) {
             return res.status(httpStatus.FOUND).json({
@@ -110,7 +116,7 @@ const register = async (req, res) => {
         const newUser = new User({
             name: name,
             username: username,
-            email: email,
+            email: normalizedEmail,
             password: hashedPassword,
             emailVerified: false,
             verificationToken: hashedVerificationToken,
@@ -122,7 +128,7 @@ const register = async (req, res) => {
         await newUser.save();
 
         await sendVerificationEmail(
-            email,
+            normalizedEmail,
             name,
             verificationToken
         );
@@ -222,12 +228,21 @@ const googleLogin = async (req, res) => {
         const email = payload.email;
         const name = payload.name;
         const avatar = payload.picture;
+        const emailVerified = payload.email_verified;
 
         if (!googleId || !email || !name) {
             return res.status(httpStatus.UNAUTHORIZED).json({
                 message: "Invalid Google account information"
             })
         }
+
+        if (!emailVerified) {
+            return res.status(httpStatus.UNAUTHORIZED).json({
+                message: "Google email is not verified"
+            })
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
 
 
         const existingGoogleUser = await User.findOne({
@@ -250,7 +265,7 @@ const googleLogin = async (req, res) => {
 
 
         const existingEmailUser = await User.findOne({
-            email: email
+            email: normalizedEmail
         });
 
         if (existingEmailUser) {
@@ -276,7 +291,7 @@ const googleLogin = async (req, res) => {
             return res.status(httpStatus.OK).json({
                 requiresUsername: true,
                 name: name,
-                email: email,
+                email: normalizedEmail,
                 avatar: avatar
             })
 
@@ -299,7 +314,7 @@ const googleLogin = async (req, res) => {
         const newUser = new User({
             name: name,
             username: username,
-            email: email,
+            email: normalizedEmail,
             password: null,
             emailVerified: true,
             googleId: googleId,

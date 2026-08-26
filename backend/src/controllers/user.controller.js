@@ -22,7 +22,9 @@ const login = async (req, res) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.status(httpStatus.NOT_FOUND).json({ message: "User Not Found" })
+            return res.status(httpStatus.NOT_FOUND).json({
+                message: "User Not Found"
+            })
         }
 
         if (!user.password) {
@@ -46,18 +48,24 @@ const login = async (req, res) => {
             user.token = token;
             await user.save();
 
-            return res.status(httpStatus.OK).json({ token: token })
+            return res.status(httpStatus.OK).json({
+                token: token
+            })
 
         } else {
+
             return res.status(httpStatus.UNAUTHORIZED).json({
                 message: "Invalid Username or password"
             })
+
         }
 
     } catch (e) {
+
         return res.status(500).json({
             message: `Something went wrong ${e}`
         })
+
     }
 }
 
@@ -106,7 +114,9 @@ const register = async (req, res) => {
             password: hashedPassword,
             emailVerified: false,
             verificationToken: hashedVerificationToken,
-            verificationTokenExpires: new Date(Date.now() + 15 * 60 * 1000)
+            verificationTokenExpires: new Date(
+                Date.now() + 15 * 60 * 1000
+            )
         });
 
         await newUser.save();
@@ -122,10 +132,13 @@ const register = async (req, res) => {
         })
 
     } catch (e) {
+
         console.log(e);
+
         res.status(500).json({
             message: `Something went wrong ${e}`
         })
+
     }
 
 }
@@ -170,10 +183,13 @@ const verifyEmail = async (req, res) => {
         })
 
     } catch (e) {
+
         res.status(500).json({
             message: `Something went wrong ${e}`
         })
+
     }
+
 }
 
 
@@ -213,27 +229,44 @@ const googleLogin = async (req, res) => {
             })
         }
 
-        const existingGoogleUser = await User.findOne({ googleId: googleId });
+
+        const existingGoogleUser = await User.findOne({
+            googleId: googleId
+        });
 
         if (existingGoogleUser) {
 
             let token = crypto.randomBytes(20).toString("hex");
 
             existingGoogleUser.token = token;
+
             await existingGoogleUser.save();
 
             return res.status(httpStatus.OK).json({
                 token: token
             })
+
         }
 
 
-        const existingEmailUser = await User.findOne({ email: email });
+        const existingEmailUser = await User.findOne({
+            email: email
+        });
 
         if (existingEmailUser) {
 
-            return res.status(httpStatus.CONFLICT).json({
-                message: "An ApnaaZoom account already exists with this email. Please login with your existing account first."
+            existingEmailUser.googleId = googleId;
+            existingEmailUser.avatar = avatar;
+            existingEmailUser.emailVerified = true;
+
+            let token = crypto.randomBytes(20).toString("hex");
+
+            existingEmailUser.token = token;
+
+            await existingEmailUser.save();
+
+            return res.status(httpStatus.OK).json({
+                token: token
             })
         }
 
@@ -246,16 +279,20 @@ const googleLogin = async (req, res) => {
                 email: email,
                 avatar: avatar
             })
+
         }
 
 
-        const existingUsername = await User.findOne({ username: username });
+        const existingUsername = await User.findOne({
+            username: username
+        });
 
         if (existingUsername) {
 
             return res.status(httpStatus.FOUND).json({
                 message: "Username already exists"
             })
+
         }
 
 
@@ -274,6 +311,7 @@ const googleLogin = async (req, res) => {
         let token = crypto.randomBytes(20).toString("hex");
 
         newUser.token = token;
+
         await newUser.save();
 
         res.status(httpStatus.CREATED).json({
@@ -287,28 +325,48 @@ const googleLogin = async (req, res) => {
         return res.status(httpStatus.UNAUTHORIZED).json({
             message: "Google authentication failed"
         })
+
     }
+
 }
 
 
 const getUserHistory = async (req, res) => {
+
     const { token } = req.query;
 
     try {
-        const user = await User.findOne({ token: token });
-        const meetings = await Meeting.find({ user_id: user.username })
+
+        const user = await User.findOne({
+            token: token
+        });
+
+        const meetings = await Meeting.find({
+            user_id: user.username
+        })
+
         res.json(meetings)
+
     } catch (e) {
-        res.json({ message: `Something went wrong ${e}` })
+
+        res.json({
+            message: `Something went wrong ${e}`
+        })
+
     }
+
 }
 
 
 const addToHistory = async (req, res) => {
+
     const { token, meeting_code } = req.body;
 
     try {
-        const user = await User.findOne({ token: token });
+
+        const user = await User.findOne({
+            token: token
+        });
 
         const newMeeting = new Meeting({
             user_id: user.username,
@@ -322,10 +380,13 @@ const addToHistory = async (req, res) => {
         })
 
     } catch (e) {
+
         res.json({
             message: `Something went wrong ${e}`
         })
+
     }
+
 }
 
 

@@ -2,18 +2,25 @@ import mongoose, { Schema } from "mongoose";
 
 const userScheme = new Schema(
     {
-        name: { type: String, required: true },
+        name: {
+            type: String,
+            required: true,
+            trim: true
+        },
 
         username: {
             type: String,
             required: true,
-            unique: true
+            unique: true,
+            trim: true
         },
 
         email: {
             type: String,
             unique: true,
-            sparse: true
+            sparse: true,
+            lowercase: true,
+            trim: true
         },
 
         password: {
@@ -53,9 +60,17 @@ const userScheme = new Schema(
 
         token: {
             type: String
+        },
+
+        tokenExpires: {
+            type: Date
         }
+    },
+    {
+        timestamps: true
     }
 )
+
 
 const User = mongoose.model("User", userScheme);
 

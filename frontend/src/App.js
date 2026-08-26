@@ -1,14 +1,23 @@
 import './App.css';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import {
+  Route,
+  BrowserRouter as Router,
+  Routes
+} from 'react-router-dom';
+
 import LandingPage from './pages/landing';
 import Authentication from './pages/authentication';
 import VerifyEmail from './pages/verify-email';
+
 import { AuthProvider } from './contexts/AuthContext';
+
 import VideoMeetComponent from './pages/VideoMeet';
 import HomeComponent from './pages/home';
 import History from './pages/history';
 
+
 function App() {
+
   return (
     <div className="App">
 
@@ -18,17 +27,35 @@ function App() {
 
           <Routes>
 
-            <Route path='/' element={<LandingPage />} />
+            <Route
+              path='/'
+              element={<LandingPage />}
+            />
 
-            <Route path='/auth' element={<Authentication />} />
+            <Route
+              path='/auth'
+              element={<Authentication />}
+            />
 
-            <Route path='/verify-email' element={<VerifyEmail />} />
+            <Route
+              path='/verify-email'
+              element={<VerifyEmail />}
+            />
 
-            <Route path='/home' element={<HomeComponent />} />
+            <Route
+              path='/home'
+              element={<HomeComponent />}
+            />
 
-            <Route path='/history' element={<History />} />
+            <Route
+              path='/history'
+              element={<History />}
+            />
 
-            <Route path='/:url' element={<VideoMeetComponent />} />
+            <Route
+              path='/:url'
+              element={<VideoMeetComponent />}
+            />
 
           </Routes>
 

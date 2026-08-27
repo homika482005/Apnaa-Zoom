@@ -216,7 +216,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Google information
+        Google account information
         --------------------------------------------------------------
         */
 
@@ -259,6 +259,12 @@ const googleLogin = async (
         }
 
 
+        /*
+        --------------------------------------------------------------
+        Verify Google email
+        --------------------------------------------------------------
+        */
+
         if (!emailVerified) {
 
             return res.status(
@@ -281,7 +287,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Find existing user
+        Find existing user by Google ID
         --------------------------------------------------------------
         */
 
@@ -293,6 +299,12 @@ const googleLogin = async (
 
             });
 
+
+        /*
+        --------------------------------------------------------------
+        Fallback: find by email
+        --------------------------------------------------------------
+        */
 
         if (!user) {
 
@@ -417,13 +429,17 @@ const googleLogin = async (
 
         while (
             await User.findOne({
+
                 username:
                     username
+
             })
         ) {
 
             const suffix =
-                String(counter);
+                String(
+                    counter
+                );
 
 
             const maxLength =
@@ -446,7 +462,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Create user
+        Create new user
         --------------------------------------------------------------
         */
 
@@ -473,6 +489,12 @@ const googleLogin = async (
 
         await user.save();
 
+
+        /*
+        --------------------------------------------------------------
+        Create session
+        --------------------------------------------------------------
+        */
 
         const token =
             await createSession(
@@ -565,7 +587,7 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Validate user
+        Validate user session
         --------------------------------------------------------------
         */
 
@@ -638,7 +660,7 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Create meeting
+        Create actual meeting
         --------------------------------------------------------------
         */
 
@@ -659,7 +681,7 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Create creator's history
+        Save creator history
         --------------------------------------------------------------
         */
 
@@ -691,7 +713,10 @@ const createMeeting = async (
                 meeting.meetingCode,
 
             date:
-                meeting.createdAt
+                meeting.createdAt,
+
+            status:
+                meeting.status
 
         });
 
@@ -789,7 +814,10 @@ const validateMeeting = async (
                 meeting.createdBy,
 
             createdAt:
-                meeting.createdAt
+                meeting.createdAt,
+
+            status:
+                meeting.status
 
         });
 
@@ -965,21 +993,22 @@ const getUserHistory = async (
 
 
         const history =
-            await MeetingHistory.find({
+            await MeetingHistory
+                .find({
 
-                user_id:
-                    user.username
+                    user_id:
+                        user.username
 
-            })
-            .populate(
-                "meeting"
-            )
-            .sort({
+                })
+                .populate(
+                    "meeting"
+                )
+                .sort({
 
-                date:
-                    -1
+                    date:
+                        -1
 
-            });
+                });
 
 
         return res.status(
@@ -1177,7 +1206,7 @@ const addToHistory = async (
                     "Meeting already exists in history",
 
                 meetingCode:
-                    cleanMeetingCode,
+                    meeting.meetingCode,
 
                 action:
                     action
@@ -1189,7 +1218,7 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
-        Create history record
+        Create history record with meeting reference
         --------------------------------------------------------------
         */
 
@@ -1266,9 +1295,9 @@ export {
 
     validateSession,
 
-    validateMeeting,
-
     createMeeting,
+
+    validateMeeting,
 
     getUserHistory,
 

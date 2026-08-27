@@ -1,127 +1,162 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, {
+    useContext,
+    useEffect
+} from "react";
 
-import server from "../environment";
+import {
+    useLocation,
+    useNavigate
+} from "react-router-dom";
+
+import {
+    AuthContext
+} from "../contexts/AuthContext";
 
 
-const withAuth = (WrappedComponent) => {
+const withAuth = (
+    WrappedComponent
+) => {
 
-    const AuthComponent = (props) => {
+    function AuthenticatedComponent(
+        props
+    ) {
 
-        const router = useNavigate();
+        const navigate =
+            useNavigate();
 
-        const [checkingAuth, setCheckingAuth] =
-            useState(true);
+
+        const location =
+            useLocation();
+
+
+        const {
+            isAuthenticated,
+            authLoading
+        } =
+            useContext(
+                AuthContext
+            );
 
 
         useEffect(() => {
 
-            let isMounted = true;
+            if (
+                authLoading
+            ) {
+
+                return;
+
+            }
 
 
-            const checkAuthentication = async () => {
+            if (
+                !isAuthenticated
+            ) {
 
-                const token =
-                    localStorage.getItem("token");
+                navigate(
+                    "/auth",
+                    {
+                        replace:
+                            true,
 
-
-                if (!token) {
-
-                    router("/auth", {
-                        replace: true
-                    });
-
-                    return;
-
-                }
-
-
-                try {
-
-                    await axios.get(
-                        `${server}/api/v1/users/validate-session`,
-                        {
-                            params: {
-                                token
-                            }
+                        state: {
+                            from:
+                                location.pathname
                         }
-                    );
-
-
-                    if (isMounted) {
-
-                        setCheckingAuth(false);
-
                     }
+                );
 
-                } catch (error) {
+            }
 
-                    console.error(
-                        "Session validation failed:",
-                        error
-                    );
-
-
-                    localStorage.removeItem(
-                        "token"
-                    );
+        }, [
+            isAuthenticated,
+            authLoading,
+            navigate,
+            location.pathname
+        ]);
 
 
-                    if (isMounted) {
+        /*
+        --------------------------------------------------------------
+        Wait until AuthContext finishes checking the session.
+        --------------------------------------------------------------
+        */
 
-                        router("/auth", {
-                            replace: true
-                        });
-
-                    }
-
-                }
-
-            };
-
-
-            checkAuthentication();
-
-
-            return () => {
-
-                isMounted = false;
-
-            };
-
-        }, [router]);
-
-
-        if (checkingAuth) {
+        if (
+            authLoading
+        ) {
 
             return (
+
                 <div
                     style={{
-                        minHeight: "100vh",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontFamily: "Arial, sans-serif"
+                        minHeight:
+                            "100vh",
+
+                        display:
+                            "flex",
+
+                        alignItems:
+                            "center",
+
+                        justifyContent:
+                            "center",
+
+                        background:
+                            "#f7f9fc",
+
+                        color:
+                            "#667085",
+
+                        fontFamily:
+                            "Arial, sans-serif"
                     }}
                 >
-                    Checking your session...
+                    Checking authentication...
                 </div>
+
             );
 
         }
 
 
+        /*
+        --------------------------------------------------------------
+        Don't render protected page when not authenticated.
+        --------------------------------------------------------------
+        */
+
+        if (
+            !isAuthenticated
+        ) {
+
+            return null;
+
+        }
+
+
         return (
+
             <WrappedComponent
                 {...props}
             />
+
         );
 
-    };
+    }
 
 
-    return AuthComponent;
+    AuthenticatedComponent.displayName =
+        `withAuth(${
+            WrappedComponent.displayName ||
+            WrappedComponent.name ||
+            "Component"
+        })`;
+
+
+    return (
+        AuthenticatedComponent
+    );
 
 };
 

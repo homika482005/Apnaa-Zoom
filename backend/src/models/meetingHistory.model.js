@@ -12,11 +12,18 @@ const meetingHistorySchema =
                 index: true
             },
 
+            meeting: {
+                type: Schema.Types.ObjectId,
+                ref: "Meeting",
+                required: true,
+                index: true
+            },
+
             meetingCode: {
                 type: String,
                 required: true,
-                index: true,
-                trim: true
+                trim: true,
+                index: true
             },
 
             action: {
@@ -34,8 +41,7 @@ const meetingHistorySchema =
                 required: true
             }
         }
-    )
-    ;
+    );
 
 
 const MeetingHistory =

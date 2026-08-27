@@ -27,11 +27,14 @@ const createSession = async (user) => {
         crypto.randomBytes(32).toString("hex");
 
 
-    user.token = token;
+    user.token =
+        token;
+
 
     user.tokenExpires =
         new Date(
-            Date.now() + SESSION_TIME
+            Date.now() +
+            SESSION_TIME
         );
 
 
@@ -49,10 +52,14 @@ const createSession = async (user) => {
 |--------------------------------------------------------------------------
 */
 
-const validateSession = async (req, res) => {
+const validateSession = async (
+    req,
+    res
+) => {
 
-    const { token } =
-        req.query;
+    const {
+        token
+    } = req.query;
 
 
     if (!token) {
@@ -60,8 +67,10 @@ const validateSession = async (req, res) => {
         return res.status(
             httpStatus.UNAUTHORIZED
         ).json({
+
             message:
                 "Authentication token is required"
+
         });
 
     }
@@ -71,10 +80,15 @@ const validateSession = async (req, res) => {
 
         const user =
             await User.findOne({
-                token: token,
+
+                token:
+                    token,
+
                 tokenExpires: {
-                    $gt: new Date()
+                    $gt:
+                        new Date()
                 }
+
             });
 
 
@@ -83,8 +97,10 @@ const validateSession = async (req, res) => {
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Invalid or expired token"
+
             });
 
         }
@@ -93,8 +109,10 @@ const validateSession = async (req, res) => {
         return res.status(
             httpStatus.OK
         ).json({
+
             message:
                 "Session is valid"
+
         });
 
 
@@ -109,8 +127,10 @@ const validateSession = async (req, res) => {
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
+
             message:
                 "Something went wrong"
+
         });
 
     }
@@ -124,7 +144,10 @@ const validateSession = async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-const googleLogin = async (req, res) => {
+const googleLogin = async (
+    req,
+    res
+) => {
 
     const {
         credential
@@ -133,9 +156,13 @@ const googleLogin = async (req, res) => {
 
     if (!credential) {
 
-        return res.status(400).json({
+        return res.status(
+            httpStatus.BAD_REQUEST
+        ).json({
+
             message:
                 "Google credential is required"
+
         });
 
     }
@@ -145,7 +172,7 @@ const googleLogin = async (req, res) => {
 
         /*
         --------------------------------------------------------------
-        Verify the Google ID token
+        Verify Google ID token
         --------------------------------------------------------------
         */
 
@@ -170,8 +197,10 @@ const googleLogin = async (req, res) => {
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Invalid Google credential"
+
             });
 
         }
@@ -179,7 +208,7 @@ const googleLogin = async (req, res) => {
 
         /*
         --------------------------------------------------------------
-        Get Google account information
+        Google account information
         --------------------------------------------------------------
         */
 
@@ -194,7 +223,8 @@ const googleLogin = async (req, res) => {
             "ApnaaZoom User";
 
         const avatar =
-            payload.picture || "";
+            payload.picture ||
+            "";
 
         const emailVerified =
             payload.email_verified;
@@ -208,8 +238,10 @@ const googleLogin = async (req, res) => {
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Invalid Google account information"
+
             });
 
         }
@@ -217,7 +249,7 @@ const googleLogin = async (req, res) => {
 
         /*
         --------------------------------------------------------------
-        Google must report the email as verified
+        Google must report a verified email
         --------------------------------------------------------------
         */
 
@@ -226,8 +258,10 @@ const googleLogin = async (req, res) => {
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Google email is not verified"
+
             });
 
         }
@@ -241,19 +275,22 @@ const googleLogin = async (req, res) => {
 
         /*
         --------------------------------------------------------------
-        1. Try Google ID first
+        Find existing user by Google ID
         --------------------------------------------------------------
         */
 
         let user =
             await User.findOne({
-                googleId: googleId
+
+                googleId:
+                    googleId
+
             });
 
 
         /*
         --------------------------------------------------------------
-        2. If not found, try the email
+        If Google ID doesn't exist, try email
         --------------------------------------------------------------
         */
 
@@ -261,8 +298,10 @@ const googleLogin = async (req, res) => {
 
             user =
                 await User.findOne({
+
                     email:
                         normalizedEmail
+
                 });
 
         }
@@ -279,17 +318,17 @@ const googleLogin = async (req, res) => {
             user.googleId =
                 googleId;
 
+
             user.email =
                 normalizedEmail;
+
 
             user.name =
                 name;
 
+
             user.avatar =
                 avatar;
-
-            user.emailVerified =
-                true;
 
 
             const token =
@@ -303,7 +342,6 @@ const googleLogin = async (req, res) => {
             ).json({
 
                 token:
-
                     token,
 
                 user: {
@@ -335,9 +373,7 @@ const googleLogin = async (req, res) => {
         New Google user
         --------------------------------------------------------------
 
-        We generate a unique username automatically.
-
-        No manual username screen.
+        Generate a unique username automatically.
         --------------------------------------------------------------
         */
 
@@ -351,7 +387,9 @@ const googleLogin = async (req, res) => {
                 .toLowerCase();
 
 
-        if (baseUsername.length < 3) {
+        if (
+            baseUsername.length < 3
+        ) {
 
             baseUsername =
                 "user";
@@ -359,7 +397,9 @@ const googleLogin = async (req, res) => {
         }
 
 
-        if (baseUsername.length > 20) {
+        if (
+            baseUsername.length > 20
+        ) {
 
             baseUsername =
                 baseUsername.substring(
@@ -374,17 +414,20 @@ const googleLogin = async (req, res) => {
             baseUsername;
 
 
-        let counter = 1;
+        let counter =
+            1;
 
 
         while (
             await User.findOne({
-                username: username
+                username:
+                    username
             })
         ) {
 
             const suffix =
                 String(counter);
+
 
             const maxLength =
                 20 -
@@ -406,7 +449,7 @@ const googleLogin = async (req, res) => {
 
         /*
         --------------------------------------------------------------
-        Create user
+        Create new user
         --------------------------------------------------------------
         */
 
@@ -421,12 +464,6 @@ const googleLogin = async (req, res) => {
 
                 email:
                     normalizedEmail,
-
-                password:
-                    undefined,
-
-                emailVerified:
-                    true,
 
                 googleId:
                     googleId,
@@ -492,8 +529,102 @@ const googleLogin = async (req, res) => {
         return res.status(
             httpStatus.UNAUTHORIZED
         ).json({
+
             message:
                 "Google authentication failed"
+
+        });
+
+    }
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Validate Meeting Code
+|--------------------------------------------------------------------------
+*/
+
+const validateMeeting = async (
+    req,
+    res
+) => {
+
+    const meetingCode =
+        String(
+            req.params.code ||
+            ""
+        ).trim();
+
+
+    if (!meetingCode) {
+
+        return res.status(
+            httpStatus.BAD_REQUEST
+        ).json({
+
+            message:
+                "Meeting code is required"
+
+        });
+
+    }
+
+
+    try {
+
+        const meeting =
+            await Meeting.findOne({
+
+                meetingCode:
+                    meetingCode
+
+            });
+
+
+        if (!meeting) {
+
+            return res.status(
+                httpStatus.NOT_FOUND
+            ).json({
+
+                message:
+                    "Meeting not found"
+
+            });
+
+        }
+
+
+        return res.status(
+            httpStatus.OK
+        ).json({
+
+            valid:
+                true,
+
+            meetingCode:
+                meetingCode
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Meeting validation error:",
+            error
+        );
+
+
+        return res.status(
+            httpStatus.INTERNAL_SERVER_ERROR
+        ).json({
+
+            message:
+                "Unable to validate meeting"
+
         });
 
     }
@@ -507,7 +638,10 @@ const googleLogin = async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-const logout = async (req, res) => {
+const logout = async (
+    req,
+    res
+) => {
 
     const {
         token
@@ -519,8 +653,10 @@ const logout = async (req, res) => {
         return res.status(
             httpStatus.OK
         ).json({
+
             message:
                 "Logged out successfully"
+
         });
 
     }
@@ -530,7 +666,10 @@ const logout = async (req, res) => {
 
         const user =
             await User.findOne({
-                token: token
+
+                token:
+                    token
+
             });
 
 
@@ -538,6 +677,7 @@ const logout = async (req, res) => {
 
             user.token =
                 undefined;
+
 
             user.tokenExpires =
                 undefined;
@@ -551,8 +691,10 @@ const logout = async (req, res) => {
         return res.status(
             httpStatus.OK
         ).json({
+
             message:
                 "Logged out successfully"
+
         });
 
 
@@ -567,8 +709,10 @@ const logout = async (req, res) => {
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
+
             message:
                 "Something went wrong"
+
         });
 
     }
@@ -597,8 +741,10 @@ const getUserHistory = async (
         return res.status(
             httpStatus.UNAUTHORIZED
         ).json({
+
             message:
                 "Authentication token is required"
+
         });
 
     }
@@ -625,8 +771,10 @@ const getUserHistory = async (
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Invalid or expired token"
+
             });
 
         }
@@ -637,6 +785,11 @@ const getUserHistory = async (
 
                 user_id:
                     user.username
+
+            }).sort({
+
+                date:
+                    -1
 
             });
 
@@ -659,8 +812,10 @@ const getUserHistory = async (
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
+
             message:
                 "Something went wrong"
+
         });
 
     }
@@ -685,14 +840,30 @@ const addToHistory = async (
     } = req.body;
 
 
+    const cleanMeetingCode =
+        String(
+            meeting_code ||
+            ""
+        )
+            .trim()
+            .replace(
+                /\s+/g,
+                ""
+            );
+
+
     if (
         !token ||
-        !meeting_code
+        !cleanMeetingCode
     ) {
 
-        return res.status(400).json({
+        return res.status(
+            httpStatus.BAD_REQUEST
+        ).json({
+
             message:
                 "Token and meeting code are required"
+
         });
 
     }
@@ -719,8 +890,10 @@ const addToHistory = async (
             return res.status(
                 httpStatus.UNAUTHORIZED
             ).json({
+
                 message:
                     "Invalid or expired token"
+
             });
 
         }
@@ -733,7 +906,7 @@ const addToHistory = async (
                     user.username,
 
                 meetingCode:
-                    meeting_code
+                    cleanMeetingCode
 
             });
 
@@ -744,8 +917,10 @@ const addToHistory = async (
         return res.status(
             httpStatus.CREATED
         ).json({
+
             message:
                 "Added code to history"
+
         });
 
 
@@ -760,8 +935,10 @@ const addToHistory = async (
         return res.status(
             httpStatus.INTERNAL_SERVER_ERROR
         ).json({
+
             message:
                 "Something went wrong"
+
         });
 
     }
@@ -782,6 +959,8 @@ export {
     logout,
 
     validateSession,
+
+    validateMeeting,
 
     getUserHistory,
 

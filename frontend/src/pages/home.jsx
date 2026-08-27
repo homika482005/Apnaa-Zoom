@@ -38,13 +38,17 @@ import {
 
 function HomeComponent() {
 
-    const navigate = useNavigate();
+    const navigate =
+        useNavigate();
 
 
     const {
-        addToUserHistory,
+        createMeeting,
+        validateMeeting,
         handleLogout
-    } = useContext(AuthContext);
+    } = useContext(
+        AuthContext
+    );
 
 
     const [meetingCode, setMeetingCode] =
@@ -61,147 +65,129 @@ function HomeComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Generate Meeting Code
-    |--------------------------------------------------------------------------
-    */
-
-    const generateMeetingCode = () => {
-
-        const characters =
-            "abcdefghijklmnopqrstuvwxyz0123456789";
-
-
-        let code = "";
-
-
-        for (let i = 0; i < 8; i++) {
-
-            code +=
-                characters.charAt(
-                    Math.floor(
-                        Math.random() *
-                        characters.length
-                    )
-                );
-
-        }
-
-
-        return code;
-
-    };
-
-
-    /*
-    |--------------------------------------------------------------------------
     | Start New Meeting
     |--------------------------------------------------------------------------
     */
 
-    const handleStartMeeting = async () => {
+    const handleStartMeeting =
+        async () => {
 
-        try {
+            try {
 
-            setError("");
-            setLoading(true);
+                setError("");
 
-
-            const code =
-                generateMeetingCode();
+                setLoading(true);
 
 
-            await addToUserHistory(
-                code
-            );
+                const result =
+                    await createMeeting();
 
 
-            navigate(
-                `/meeting/${code}`
-            );
+                if (
+                    !result ||
+                    !result.meetingCode
+                ) {
+
+                    throw new Error(
+                        "Meeting could not be created."
+                    );
+
+                }
 
 
-        } catch (err) {
-
-            console.error(
-                "Start meeting error:",
-                err
-            );
+                navigate(
+                    `/meeting/${result.meetingCode}`
+                );
 
 
-            setError(
-                "Unable to start the meeting. Please try again."
-            );
+            } catch (err) {
 
-        } finally {
+                console.error(
+                    "Start meeting error:",
+                    err
+                );
 
-            setLoading(false);
 
-        }
+                setError(
+                    err.response?.data?.message ||
+                    err.message ||
+                    "Unable to start the meeting. Please try again."
+                );
 
-    };
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Join Meeting
+    | Join Existing Meeting
     |--------------------------------------------------------------------------
     */
 
-    const handleJoinMeeting = async () => {
+    const handleJoinMeeting =
+        async () => {
 
-        const cleanCode =
-            meetingCode
-                .trim()
-                .replace(/\s+/g, "")
-                .replace(/^\/+/, "");
-
-
-        if (!cleanCode) {
-
-            setError(
-                "Please enter a meeting code."
-            );
-
-            return;
-
-        }
+            const cleanCode =
+                meetingCode
+                    .trim()
+                    .replace(/\s+/g, "")
+                    .replace(/^\/+/, "");
 
 
-        try {
+            if (!cleanCode) {
 
-            setError("");
-            setLoading(true);
+                setError(
+                    "Please enter a meeting code."
+                );
 
+                return;
 
-            await addToUserHistory(
-                cleanCode
-            );
-
-
-            navigate(
-                `/meeting/${cleanCode}`
-            );
+            }
 
 
-        } catch (err) {
+            try {
 
-            console.error(
-                "Join meeting error:",
-                err
-            );
+                setError("");
+
+                setLoading(true);
 
 
-            setError(
-                "Unable to join the meeting. Please check the code and try again."
-            );
+                await validateMeeting(
+                    cleanCode
+                );
 
-        } finally {
 
-            setLoading(false);
+                navigate(
+                    `/meeting/${cleanCode}`
+                );
 
-        }
 
-    };
+            } catch (err) {
+
+                console.error(
+                    "Join meeting error:",
+                    err
+                );
+
+
+                setError(
+                    err.response?.data?.message ||
+                    err.message ||
+                    "Meeting not found. Please check the code."
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        };
 
 
     /*
@@ -210,43 +196,43 @@ function HomeComponent() {
     |--------------------------------------------------------------------------
     */
 
-    const handleCopyMeetingCode = async () => {
+    const handleCopyMeetingCode =
+        async () => {
 
-        const cleanCode =
-            meetingCode
-                .trim()
-                .replace(/\s+/g, "")
-                .replace(/^\/+/, "");
-
-
-        if (!cleanCode) {
-
-            setError(
-                "Enter a meeting code first."
-            );
-
-            return;
-
-        }
+            const cleanCode =
+                meetingCode
+                    .trim()
+                    .replace(/\s+/g, "")
+                    .replace(/^\/+/, "");
 
 
-        try {
+            if (!cleanCode) {
 
-            await navigator.clipboard.writeText(
-                cleanCode
-            );
+                setError(
+                    "Enter a meeting code first."
+                );
+
+                return;
+
+            }
 
 
-        } catch (err) {
+            try {
 
-            console.error(
-                "Copy meeting code failed:",
-                err
-            );
+                await navigator.clipboard.writeText(
+                    cleanCode
+                );
 
-        }
+            } catch (err) {
 
-    };
+                console.error(
+                    "Copy meeting code failed:",
+                    err
+                );
+
+            }
+
+        };
 
 
     /*
@@ -255,11 +241,12 @@ function HomeComponent() {
     |--------------------------------------------------------------------------
     */
 
-    const handleLogoutUser = async () => {
+    const handleLogoutUser =
+        async () => {
 
-        await handleLogout();
+            await handleLogout();
 
-    };
+        };
 
 
     /*
@@ -268,29 +255,30 @@ function HomeComponent() {
     |--------------------------------------------------------------------------
     */
 
-    const handleKeyDown = (
-        event
-    ) => {
+    const handleKeyDown =
+        (event) => {
 
-        if (
-            event.key === "Enter" &&
-            !loading
-        ) {
+            if (
+                event.key === "Enter" &&
+                !loading
+            ) {
 
-            handleJoinMeeting();
+                handleJoinMeeting();
 
-        }
+            }
 
-    };
+        };
 
 
     return (
 
         <Box
             sx={{
-                minHeight: "100vh",
+                minHeight:
+                    "100vh",
+
                 background:
-                    "linear-gradient(180deg, #f8faff 0%, #eef4ff 100%)"
+                    "linear-gradient(180deg,#f8faff 0%,#eef4ff 100%)"
             }}
         >
 
@@ -300,12 +288,21 @@ function HomeComponent() {
 
             <Box
                 sx={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 10,
+                    position:
+                        "sticky",
+
+                    top:
+                        0,
+
+                    zIndex:
+                        10,
+
                     backgroundColor:
                         "rgba(255,255,255,0.92)",
-                    backdropFilter: "blur(12px)",
+
+                    backdropFilter:
+                        "blur(12px)",
+
                     borderBottom:
                         "1px solid rgba(0,0,0,0.06)"
                 }}
@@ -314,17 +311,25 @@ function HomeComponent() {
                 <Container
                     maxWidth="lg"
                     sx={{
-                        py: {
-                            xs: 1.2,
-                            sm: 1.5
-                        }
+                        py:
+                            {
+                                xs:
+                                    1.2,
+
+                                sm:
+                                    1.5
+                            }
                     }}
                 >
 
                     <Box
                         sx={{
-                            display: "flex",
-                            alignItems: "center",
+                            display:
+                                "flex",
+
+                            alignItems:
+                                "center",
+
                             justifyContent:
                                 "space-between"
                         }}
@@ -336,14 +341,23 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    fontSize: {
-                                        xs: "1.35rem",
-                                        sm: "1.55rem"
-                                    },
-                                    fontWeight: 800,
+                                    fontSize:
+                                        {
+                                            xs:
+                                                "1.35rem",
+
+                                            sm:
+                                                "1.55rem"
+                                        },
+
+                                    fontWeight:
+                                        800,
+
                                     letterSpacing:
                                         "-0.04em",
-                                    color: "#171b2d"
+
+                                    color:
+                                        "#171b2d"
                                 }}
                             >
                                 ApnaaZoom
@@ -352,12 +366,20 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    display: {
-                                        xs: "none",
-                                        sm: "block"
-                                    },
-                                    fontSize: "0.78rem",
-                                    color: "#697386"
+                                    display:
+                                        {
+                                            xs:
+                                                "none",
+
+                                            sm:
+                                                "block"
+                                        },
+
+                                    fontSize:
+                                        "0.78rem",
+
+                                    color:
+                                        "#697386"
                                 }}
                             >
                                 Connect. Talk. Collaborate.
@@ -366,17 +388,24 @@ function HomeComponent() {
                         </Box>
 
 
-                        {/* Header actions */}
+                        {/* Actions */}
 
                         <Box
                             sx={{
-                                display: "flex",
+                                display:
+                                    "flex",
+
                                 alignItems:
                                     "center",
-                                gap: {
-                                    xs: 0.3,
-                                    sm: 1
-                                }
+
+                                gap:
+                                    {
+                                        xs:
+                                            0.3,
+
+                                        sm:
+                                            1
+                                    }
                             }}
                         >
 
@@ -390,13 +419,24 @@ function HomeComponent() {
                                     )
                                 }
                                 sx={{
-                                    minWidth: "auto",
-                                    color: "#374151",
-                                    fontWeight: 600,
-                                    display: {
-                                        xs: "none",
-                                        sm: "inline-flex"
-                                    },
+                                    minWidth:
+                                        "auto",
+
+                                    color:
+                                        "#374151",
+
+                                    fontWeight:
+                                        600,
+
+                                    display:
+                                        {
+                                            xs:
+                                                "none",
+
+                                            sm:
+                                                "inline-flex"
+                                        },
+
                                     textTransform:
                                         "none"
                                 }}
@@ -413,10 +453,14 @@ function HomeComponent() {
                                     )
                                 }
                                 sx={{
-                                    display: {
-                                        xs: "inline-flex",
-                                        sm: "none"
-                                    }
+                                    display:
+                                        {
+                                            xs:
+                                                "inline-flex",
+
+                                            sm:
+                                                "none"
+                                        }
                                 }}
                             >
                                 <HistoryRounded />
@@ -431,9 +475,15 @@ function HomeComponent() {
                                     handleLogoutUser
                                 }
                                 sx={{
-                                    minWidth: "auto",
-                                    color: "#374151",
-                                    fontWeight: 600,
+                                    minWidth:
+                                        "auto",
+
+                                    color:
+                                        "#374151",
+
+                                    fontWeight:
+                                        600,
+
                                     textTransform:
                                         "none"
                                 }}
@@ -442,10 +492,14 @@ function HomeComponent() {
                                 <Box
                                     component="span"
                                     sx={{
-                                        display: {
-                                            xs: "none",
-                                            sm: "inline"
-                                        }
+                                        display:
+                                            {
+                                                xs:
+                                                    "none",
+
+                                                sm:
+                                                    "inline"
+                                            }
                                     }}
                                 >
                                     Logout
@@ -469,11 +523,17 @@ function HomeComponent() {
             <Container
                 maxWidth="lg"
                 sx={{
-                    py: {
-                        xs: 4,
-                        sm: 6,
-                        md: 8
-                    }
+                    py:
+                        {
+                            xs:
+                                4,
+
+                            sm:
+                                6,
+
+                            md:
+                                8
+                        }
                 }}
             >
 
@@ -481,29 +541,58 @@ function HomeComponent() {
 
                 <Box
                     sx={{
-                        maxWidth: 760,
-                        mx: "auto",
-                        textAlign: "center",
-                        mb: {
-                            xs: 4,
-                            md: 6
-                        }
+                        maxWidth:
+                            760,
+
+                        mx:
+                            "auto",
+
+                        textAlign:
+                            "center",
+
+                        mb:
+                            {
+                                xs:
+                                    4,
+
+                                md:
+                                    6
+                            }
                     }}
                 >
 
                     <Box
                         sx={{
-                            width: 62,
-                            height: 62,
-                            mx: "auto",
-                            mb: 2,
-                            borderRadius: "18px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            width:
+                                62,
+
+                            height:
+                                62,
+
+                            mx:
+                                "auto",
+
+                            mb:
+                                2,
+
+                            borderRadius:
+                                "18px",
+
+                            display:
+                                "flex",
+
+                            alignItems:
+                                "center",
+
+                            justifyContent:
+                                "center",
+
                             background:
                                 "linear-gradient(135deg,#1976d2,#6c63ff)",
-                            color: "#fff",
+
+                            color:
+                                "#fff",
+
                             boxShadow:
                                 "0 12px 30px rgba(63,81,181,0.22)"
                         }}
@@ -511,7 +600,8 @@ function HomeComponent() {
 
                         <VideoCallRounded
                             sx={{
-                                fontSize: 34
+                                fontSize:
+                                    34
                             }}
                         />
 
@@ -521,17 +611,32 @@ function HomeComponent() {
                     <Typography
                         component="h1"
                         sx={{
-                            fontSize: {
-                                xs: "2rem",
-                                sm: "2.7rem",
-                                md: "3.2rem"
-                            },
-                            lineHeight: 1.08,
-                            fontWeight: 800,
+                            fontSize:
+                                {
+                                    xs:
+                                        "2rem",
+
+                                    sm:
+                                        "2.7rem",
+
+                                    md:
+                                        "3.2rem"
+                                },
+
+                            lineHeight:
+                                1.08,
+
+                            fontWeight:
+                                800,
+
                             letterSpacing:
                                 "-0.055em",
-                            color: "#171b2d",
-                            mb: 1.5
+
+                            color:
+                                "#171b2d",
+
+                            mb:
+                                1.5
                         }}
                     >
                         Video meetings,
@@ -539,7 +644,8 @@ function HomeComponent() {
                         <Box
                             component="span"
                             sx={{
-                                color: "#1976d2"
+                                color:
+                                    "#1976d2"
                             }}
                         >
                             {" "}made simple.
@@ -549,14 +655,26 @@ function HomeComponent() {
 
                     <Typography
                         sx={{
-                            maxWidth: 620,
-                            mx: "auto",
-                            fontSize: {
-                                xs: "0.98rem",
-                                sm: "1.08rem"
-                            },
-                            lineHeight: 1.7,
-                            color: "#667085"
+                            maxWidth:
+                                620,
+
+                            mx:
+                                "auto",
+
+                            fontSize:
+                                {
+                                    xs:
+                                        "0.98rem",
+
+                                    sm:
+                                        "1.08rem"
+                                },
+
+                            lineHeight:
+                                1.7,
+
+                            color:
+                                "#667085"
                         }}
                     >
                         Start a new meeting or join someone
@@ -573,17 +691,32 @@ function HomeComponent() {
 
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: {
-                            xs: "1fr",
-                            md: "1fr 1fr"
-                        },
-                        gap: {
-                            xs: 2,
-                            md: 3
-                        },
-                        maxWidth: 1000,
-                        mx: "auto"
+                        display:
+                            "grid",
+
+                        gridTemplateColumns:
+                            {
+                                xs:
+                                    "1fr",
+
+                                md:
+                                    "1fr 1fr"
+                            },
+
+                        gap:
+                            {
+                                xs:
+                                    2,
+
+                                md:
+                                    3
+                            },
+
+                        maxWidth:
+                            1000,
+
+                        mx:
+                            "auto"
                     }}
                 >
 
@@ -592,14 +725,21 @@ function HomeComponent() {
                     <Card
                         elevation={0}
                         sx={{
-                            borderRadius: {
-                                xs: 3,
-                                sm: 4
-                            },
+                            borderRadius:
+                                {
+                                    xs:
+                                        3,
+
+                                    sm:
+                                        4
+                                },
+
                             border:
                                 "1px solid rgba(25,118,210,0.12)",
+
                             background:
                                 "linear-gradient(145deg,#ffffff,#f7faff)",
+
                             boxShadow:
                                 "0 12px 35px rgba(34,62,120,0.07)"
                         }}
@@ -607,32 +747,57 @@ function HomeComponent() {
 
                         <CardContent
                             sx={{
-                                p: {
-                                    xs: 2.5,
-                                    sm: 3.5
-                                },
-                                "&:last-child": {
-                                    pb: {
-                                        xs: 2.5,
-                                        sm: 3.5
-                                    }
+                                p:
+                                    {
+                                        xs:
+                                            2.5,
+
+                                        sm:
+                                            3.5
+                                    },
+
+                                "&:last-child":
+                                {
+                                    pb:
+                                        {
+                                            xs:
+                                                2.5,
+
+                                            sm:
+                                                3.5
+                                        }
                                 }
                             }}
                         >
 
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 2.5,
-                                    display: "flex",
-                                    alignItems: "center",
+                                    width:
+                                        48,
+
+                                    height:
+                                        48,
+
+                                    borderRadius:
+                                        2.5,
+
+                                    display:
+                                        "flex",
+
+                                    alignItems:
+                                        "center",
+
                                     justifyContent:
                                         "center",
+
                                     background:
                                         "#e8f1ff",
-                                    color: "#1976d2",
-                                    mb: 2
+
+                                    color:
+                                        "#1976d2",
+
+                                    mb:
+                                        2
                                 }}
                             >
 
@@ -645,10 +810,13 @@ function HomeComponent() {
                                 sx={{
                                     fontSize:
                                         "1.35rem",
+
                                     fontWeight:
                                         750,
+
                                     color:
                                         "#171b2d",
+
                                     mb:
                                         0.8
                                 }}
@@ -661,15 +829,17 @@ function HomeComponent() {
                                 sx={{
                                     color:
                                         "#697386",
+
                                     lineHeight:
                                         1.6,
+
                                     mb:
                                         3
                                 }}
                             >
-                                Create an instant meeting
-                                and invite others with
-                                your meeting link.
+                                Create a real meeting and
+                                invite others with its unique
+                                meeting link.
                             </Typography>
 
 
@@ -692,14 +862,19 @@ function HomeComponent() {
                                 sx={{
                                     py:
                                         1.45,
+
                                     borderRadius:
                                         2.5,
+
                                     fontWeight:
                                         700,
+
                                     textTransform:
                                         "none",
+
                                     fontSize:
                                         "1rem",
+
                                     boxShadow:
                                         "0 8px 18px rgba(25,118,210,0.22)"
                                 }}
@@ -719,14 +894,21 @@ function HomeComponent() {
                     <Card
                         elevation={0}
                         sx={{
-                            borderRadius: {
-                                xs: 3,
-                                sm: 4
-                            },
+                            borderRadius:
+                                {
+                                    xs:
+                                        3,
+
+                                    sm:
+                                        4
+                                },
+
                             border:
                                 "1px solid rgba(0,0,0,0.08)",
+
                             background:
                                 "#ffffff",
+
                             boxShadow:
                                 "0 12px 35px rgba(34,62,120,0.07)"
                         }}
@@ -734,35 +916,55 @@ function HomeComponent() {
 
                         <CardContent
                             sx={{
-                                p: {
-                                    xs: 2.5,
-                                    sm: 3.5
-                                },
-                                "&:last-child": {
-                                    pb: {
-                                        xs: 2.5,
-                                        sm: 3.5
-                                    }
+                                p:
+                                    {
+                                        xs:
+                                            2.5,
+
+                                        sm:
+                                            3.5
+                                    },
+
+                                "&:last-child":
+                                {
+                                    pb:
+                                        {
+                                            xs:
+                                                2.5,
+
+                                            sm:
+                                                3.5
+                                        }
                                 }
                             }}
                         >
 
                             <Box
                                 sx={{
-                                    width: 48,
-                                    height: 48,
+                                    width:
+                                        48,
+
+                                    height:
+                                        48,
+
                                     borderRadius:
                                         2.5,
+
                                     display:
                                         "flex",
+
                                     alignItems:
                                         "center",
+
                                     justifyContent:
                                         "center",
+
                                     background:
                                         "#f1f0ff",
+
                                     color:
                                         "#635bdb",
+
                                     mb:
                                         2
                                 }}
@@ -777,10 +979,13 @@ function HomeComponent() {
                                 sx={{
                                     fontSize:
                                         "1.35rem",
+
                                     fontWeight:
                                         750,
+
                                     color:
                                         "#171b2d",
+
                                     mb:
                                         0.8
                                 }}
@@ -793,14 +998,16 @@ function HomeComponent() {
                                 sx={{
                                     color:
                                         "#697386",
+
                                     lineHeight:
                                         1.6,
+
                                     mb:
                                         2.5
                                 }}
                             >
-                                Enter the meeting code
-                                shared with you.
+                                Enter an existing meeting
+                                code to join it.
                             </Typography>
 
 
@@ -828,16 +1035,6 @@ function HomeComponent() {
                                 label="Meeting Code"
                                 placeholder="e.g. ab12cd34"
                                 autoComplete="off"
-                                sx={{
-                                    mb:
-                                        1.5,
-
-                                    "& .MuiOutlinedInput-root":
-                                    {
-                                        borderRadius:
-                                            2.5
-                                    }
-                                }}
                                 InputProps={{
                                     endAdornment:
                                         meetingCode && (
@@ -853,14 +1050,26 @@ function HomeComponent() {
                                                     }
                                                     aria-label="Copy meeting code"
                                                 >
+
                                                     <ContentCopyRounded
                                                         fontSize="small"
                                                     />
+
                                                 </IconButton>
 
                                             </InputAdornment>
 
                                         )
+                                }}
+                                sx={{
+                                    mb:
+                                        1.5,
+
+                                    "& .MuiOutlinedInput-root":
+                                    {
+                                        borderRadius:
+                                            2.5
+                                    }
                                 }}
                             />
 
@@ -878,18 +1087,22 @@ function HomeComponent() {
                                 sx={{
                                     py:
                                         1.4,
+
                                     borderRadius:
                                         2.5,
+
                                     fontWeight:
                                         700,
+
                                     textTransform:
                                         "none",
+
                                     fontSize:
                                         "1rem"
                                 }}
                             >
                                 {loading
-                                    ? "Joining..."
+                                    ? "Checking..."
                                     : "Join Meeting"}
                             </Button>
 
@@ -906,12 +1119,24 @@ function HomeComponent() {
 
                     <Typography
                         sx={{
-                            maxWidth: 1000,
-                            mx: "auto",
-                            mt: 2,
-                            px: 1,
-                            color: "#d32f2f",
-                            textAlign: "center",
+                            maxWidth:
+                                1000,
+
+                            mx:
+                                "auto",
+
+                            mt:
+                                2,
+
+                            px:
+                                1,
+
+                            color:
+                                "#d32f2f",
+
+                            textAlign:
+                                "center",
+
                             fontSize:
                                 "0.9rem"
                         }}
@@ -928,18 +1153,27 @@ function HomeComponent() {
 
                 <Box
                     sx={{
-                        maxWidth: 1000,
-                        mx: "auto",
-                        mt: {
-                            xs: 4,
-                            md: 5
-                        }
+                        maxWidth:
+                            1000,
+
+                        mx:
+                            "auto",
+
+                        mt:
+                            {
+                                xs:
+                                    4,
+
+                                md:
+                                    5
+                            }
                     }}
                 >
 
                     <Divider
                         sx={{
-                            mb: 2.5
+                            mb:
+                                2.5
                         }}
                     />
 
@@ -948,16 +1182,22 @@ function HomeComponent() {
                         sx={{
                             display:
                                 "flex",
+
                             justifyContent:
                                 "center",
+
                             alignItems:
                                 "center",
+
                             gap:
                                 1,
+
                             flexWrap:
                                 "wrap",
+
                             color:
                                 "#7a8496",
+
                             textAlign:
                                 "center"
                         }}
@@ -974,10 +1214,13 @@ function HomeComponent() {
                             sx={{
                                 width:
                                     4,
+
                                 height:
                                     4,
+
                                 borderRadius:
                                     "50%",
+
                                 background:
                                     "#b5bcc8"
                             }}
@@ -995,10 +1238,13 @@ function HomeComponent() {
                             sx={{
                                 width:
                                     4,
+
                                 height:
                                     4,
+
                                 borderRadius:
                                     "50%",
+
                                 background:
                                     "#b5bcc8"
                             }}

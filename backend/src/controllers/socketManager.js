@@ -1,29 +1,135 @@
-import { Server } from "socket.io";
-import { User } from "../models/user.model.js";
+import {
+    Server
+} from "socket.io";
+
+import {
+    User
+} from "../models/user.model.js";
+
+import {
+    Meeting
+} from "../models/meeting.model.js";
 
 
 const connections = {};
+
 const messages = {};
+
 const timeOnline = {};
 
 
-export const connectToSocket = (server) => {
+/*
+|--------------------------------------------------------------------------
+| Get Meeting Code From URL
+|--------------------------------------------------------------------------
+*/
 
-    const io = new Server(server, {
+const getMeetingCodeFromPath = (
+    path
+) => {
 
-        cors: {
-            origin: [
-                "https://apnaazoom-frontend.onrender.com",
-                "http://localhost:3000"
-            ],
-            methods: [
-                "GET",
-                "POST"
-            ],
-            credentials: true
+    try {
+
+        if (!path) {
+
+            return null;
+
         }
 
-    });
+
+        const parsedUrl =
+            new URL(
+                path
+            );
+
+
+        const pathParts =
+            parsedUrl
+                .pathname
+                .split("/")
+                .filter(
+                    part =>
+                        part
+                );
+
+
+        const meetingIndex =
+            pathParts.indexOf(
+                "meeting"
+            );
+
+
+        if (
+            meetingIndex === -1 ||
+            !pathParts[
+                meetingIndex + 1
+            ]
+        ) {
+
+            return null;
+
+        }
+
+
+        return decodeURIComponent(
+            pathParts[
+                meetingIndex + 1
+            ]
+        ).trim();
+
+
+    } catch (error) {
+
+        console.error(
+            "Meeting URL parsing error:",
+            error
+        );
+
+
+        return null;
+
+    }
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Socket Server
+|--------------------------------------------------------------------------
+*/
+
+export const connectToSocket = (
+    server
+) => {
+
+    const io =
+        new Server(
+            server,
+            {
+
+                cors: {
+
+                    origin: [
+
+                        "https://apnaazoom-frontend.onrender.com",
+
+                        "http://localhost:3000"
+
+                    ],
+
+                    methods: [
+                        "GET",
+                        "POST"
+                    ],
+
+                    credentials:
+                        true
+
+                }
+
+            }
+        );
 
 
     /*
@@ -32,70 +138,82 @@ export const connectToSocket = (server) => {
     |--------------------------------------------------------------------------
     */
 
-    io.use(async (socket, next) => {
+    io.use(
+        async (
+            socket,
+            next
+        ) => {
 
-        try {
+            try {
 
-            const token =
-                socket.handshake.auth?.token;
+                const token =
+                    socket
+                        .handshake
+                        .auth
+                        ?.token;
 
 
-            if (!token) {
+                if (!token) {
 
-                return next(
+                    return next(
+                        new Error(
+                            "Authentication required"
+                        )
+                    );
+
+                }
+
+
+                const user =
+                    await User.findOne({
+
+                        token:
+                            token,
+
+                        tokenExpires: {
+                            $gt:
+                                new Date()
+                        }
+
+                    });
+
+
+                if (!user) {
+
+                    return next(
+                        new Error(
+                            "Invalid or expired session"
+                        )
+                    );
+
+                }
+
+
+                socket.user =
+                    user;
+
+
+                next();
+
+
+            } catch (error) {
+
+                console.error(
+                    "Socket authentication error:",
+                    error
+                );
+
+
+                next(
                     new Error(
-                        "Authentication required"
+                        "Socket authentication failed"
                     )
                 );
 
             }
-
-
-            const user =
-                await User.findOne({
-
-                    token: token,
-
-                    tokenExpires: {
-                        $gt: new Date()
-                    }
-
-                });
-
-
-            if (!user) {
-
-                return next(
-                    new Error(
-                        "Invalid or expired session"
-                    )
-                );
-
-            }
-
-
-            socket.user = user;
-
-            next();
-
-
-        } catch (error) {
-
-            console.error(
-                "Socket authentication error:",
-                error
-            );
-
-
-            next(
-                new Error(
-                    "Socket authentication failed"
-                )
-            );
 
         }
-
-    });
+    );
 
 
     /*
@@ -106,7 +224,9 @@ export const connectToSocket = (server) => {
 
     io.on(
         "connection",
-        (socket) => {
+        (
+            socket
+        ) => {
 
             console.log(
                 "Authenticated socket connected:",
@@ -124,78 +244,280 @@ export const connectToSocket = (server) => {
 
             socket.on(
                 "join-call",
-                (path) => {
+                async (
+                    path
+                ) => {
 
                     if (!path) {
+
                         return;
+
                     }
 
 
+                    /*
+                    --------------------------------------------------------------
+                    Extract meeting code
+                    --------------------------------------------------------------
+                    */
+
+                    const meetingCode =
+                        getMeetingCodeFromPath(
+                            path
+                        );
+
+
+                    if (!meetingCode) {
+
+                        socket.emit(
+                            "meeting-error",
+                            "Invalid meeting link"
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Check actual meeting in MongoDB
+                    --------------------------------------------------------------
+                    */
+
+                    try {
+
+                        const meeting =
+                            await Meeting.findOne({
+
+                                meetingCode:
+                                    meetingCode
+
+                            });
+
+
+                        if (!meeting) {
+
+                            socket.emit(
+                                "meeting-error",
+                                "Meeting not found"
+                            );
+
+                            return;
+
+                        }
+
+                    } catch (meetingError) {
+
+                        console.error(
+                            "Meeting lookup error:",
+                            meetingError
+                        );
+
+
+                        socket.emit(
+                            "meeting-error",
+                            "Unable to verify meeting"
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Use normalized meeting room ID
+                    --------------------------------------------------------------
+                    */
+
+                    const room =
+                        `meeting:${meetingCode}`;
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Leave previous room if any
+                    --------------------------------------------------------------
+                    */
+
                     if (
-                        connections[path] ===
-                        undefined
+                        socket.currentRoom &&
+                        socket.currentRoom !==
+                            room
                     ) {
 
-                        connections[path] = [];
+                        const previousRoom =
+                            socket.currentRoom;
+
+
+                        socket.leave(
+                            previousRoom
+                        );
+
+
+                        if (
+                            connections[
+                                previousRoom
+                            ]
+                        ) {
+
+                            connections[
+                                previousRoom
+                            ] =
+                                connections[
+                                    previousRoom
+                                ].filter(
+                                    socketId =>
+                                        socketId !==
+                                        socket.id
+                                );
+
+
+                            if (
+                                connections[
+                                    previousRoom
+                                ].length ===
+                                0
+                            ) {
+
+                                delete connections[
+                                    previousRoom
+                                ];
+
+                                delete messages[
+                                    previousRoom
+                                ];
+
+                            }
+
+                        }
 
                     }
 
 
+                    socket.currentRoom =
+                        room;
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Create room
+                    --------------------------------------------------------------
+                    */
+
                     if (
-                        !connections[path].includes(
+                        !connections[room]
+                    ) {
+
+                        connections[room] =
+                            [];
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Add socket to room
+                    --------------------------------------------------------------
+                    */
+
+                    if (
+                        !connections[
+                            room
+                        ].includes(
                             socket.id
                         )
                     ) {
 
-                        connections[path].push(
+                        connections[
+                            room
+                        ].push(
                             socket.id
                         );
 
                     }
 
 
-                    timeOnline[socket.id] =
+                    socket.join(
+                        room
+                    );
+
+
+                    timeOnline[
+                        socket.id
+                    ] =
                         new Date();
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Notify all participants
+                    --------------------------------------------------------------
+                    */
+
+                    const roomConnections =
+                        connections[
+                            room
+                        ];
 
 
                     for (
                         let i = 0;
-                        i < connections[path].length;
+                        i <
+                        roomConnections.length;
                         i++
                     ) {
 
                         io.to(
-                            connections[path][i]
+                            roomConnections[i]
                         ).emit(
                             "user-joined",
                             socket.id,
-                            connections[path]
+                            roomConnections
                         );
 
                     }
 
 
+                    /*
+                    --------------------------------------------------------------
+                    Send previous chat messages
+                    --------------------------------------------------------------
+                    */
+
                     if (
-                        messages[path] !==
-                        undefined
+                        messages[
+                            room
+                        ]
                     ) {
 
                         for (
                             let i = 0;
-                            i < messages[path].length;
+                            i <
+                            messages[
+                                room
+                            ].length;
                             i++
                         ) {
+
+                            const chatMessage =
+                                messages[
+                                    room
+                                ][i];
+
 
                             io.to(
                                 socket.id
                             ).emit(
+
                                 "chat-message",
 
-                                messages[path][i].data,
+                                chatMessage.data,
 
-                                messages[path][i].sender,
+                                chatMessage.sender,
 
-                                messages[path][i][
+                                chatMessage[
                                     "socket-id-sender"
                                 ]
 
@@ -232,6 +554,37 @@ export const connectToSocket = (server) => {
                     }
 
 
+                    /*
+                    --------------------------------------------------------------
+                    Only allow signaling while inside a valid meeting
+                    --------------------------------------------------------------
+                    */
+
+                    if (
+                        !socket.currentRoom ||
+                        !connections[
+                            socket.currentRoom
+                        ]
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        !connections[
+                            socket.currentRoom
+                        ].includes(
+                            toId
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
                     io.to(
                         toId
                     ).emit(
@@ -258,52 +611,34 @@ export const connectToSocket = (server) => {
                 ) => {
 
                     if (!data) {
+
                         return;
+
                     }
 
 
-                    const entries =
-                        Object.entries(
-                            connections
-                        );
+                    const room =
+                        socket.currentRoom;
 
 
-                    let matchingRoom =
-                        null;
-
-
-                    for (
-                        let i = 0;
-                        i < entries.length;
-                        i++
+                    if (
+                        !room ||
+                        !connections[
+                            room
+                        ]
                     ) {
 
-                        const [
-                            room,
-                            roomConnections
-                        ] =
-                            entries[i];
-
-
-                        if (
-                            roomConnections.includes(
-                                socket.id
-                            )
-                        ) {
-
-                            matchingRoom =
-                                room;
-
-                            break;
-
-                        }
+                        return;
 
                     }
 
 
                     if (
-                        matchingRoom ===
-                        null
+                        !connections[
+                            room
+                        ].includes(
+                            socket.id
+                        )
                     ) {
 
                         return;
@@ -313,13 +648,14 @@ export const connectToSocket = (server) => {
 
                     if (
                         messages[
-                            matchingRoom
+                            room
                         ] === undefined
                     ) {
 
                         messages[
-                            matchingRoom
-                        ] = [];
+                            room
+                        ] =
+                            [];
 
                     }
 
@@ -332,7 +668,8 @@ export const connectToSocket = (server) => {
                             "User",
 
                         data:
-                            String(data),
+                            String(data)
+                                .trim(),
 
                         "socket-id-sender":
                             socket.id
@@ -340,21 +677,55 @@ export const connectToSocket = (server) => {
                     };
 
 
+                    /*
+                    --------------------------------------------------------------
+                    Don't store empty messages
+                    --------------------------------------------------------------
+                    */
+
+                    if (
+                        !chatMessage.data
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Basic size protection
+                    --------------------------------------------------------------
+                    */
+
+                    if (
+                        chatMessage.data.length >
+                        2000
+                    ) {
+
+                        return;
+
+                    }
+
+
                     messages[
-                        matchingRoom
+                        room
                     ].push(
                         chatMessage
                     );
 
 
                     connections[
-                        matchingRoom
+                        room
                     ].forEach(
-                        (socketId) => {
+                        (
+                            socketId
+                        ) => {
 
                             io.to(
                                 socketId
                             ).emit(
+
                                 "chat-message",
 
                                 chatMessage.data,
@@ -362,6 +733,7 @@ export const connectToSocket = (server) => {
                                 chatMessage.sender,
 
                                 socket.id
+
                             );
 
                         }
@@ -392,81 +764,97 @@ export const connectToSocket = (server) => {
                     ];
 
 
-                    for (
-                        const [
-                            room,
-                            roomConnections
-                        ] of Object.entries(
-                            connections
-                        )
+                    const room =
+                        socket.currentRoom;
+
+
+                    if (
+                        !room ||
+                        !connections[
+                            room
+                        ]
                     ) {
 
-                        if (
-                            !roomConnections.includes(
+                        return;
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Notify remaining users
+                    --------------------------------------------------------------
+                    */
+
+                    connections[
+                        room
+                    ].forEach(
+                        (
+                            socketId
+                        ) => {
+
+                            if (
+                                socketId !==
                                 socket.id
-                            )
-                        ) {
+                            ) {
 
-                            continue;
-
-                        }
-
-
-                        roomConnections.forEach(
-                            (socketId) => {
-
-                                if (
-                                    socketId !==
+                                io.to(
+                                    socketId
+                                ).emit(
+                                    "user-left",
                                     socket.id
-                                ) {
-
-                                    io.to(
-                                        socketId
-                                    ).emit(
-                                        "user-left",
-                                        socket.id
-                                    );
-
-                                }
+                                );
 
                             }
+
+                        }
+                    );
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Remove socket
+                    --------------------------------------------------------------
+                    */
+
+                    connections[
+                        room
+                    ] =
+                        connections[
+                            room
+                        ].filter(
+                            socketId =>
+                                socketId !==
+                                socket.id
                         );
 
 
-                        const index =
-                            roomConnections.indexOf(
-                                socket.id
-                            );
+                    /*
+                    --------------------------------------------------------------
+                    Remove empty room
+                    --------------------------------------------------------------
+                    */
 
+                    if (
+                        connections[
+                            room
+                        ].length ===
+                        0
+                    ) {
 
-                        if (
-                            index !== -1
-                        ) {
+                        delete connections[
+                            room
+                        ];
 
-                            roomConnections.splice(
-                                index,
-                                1
-                            );
-
-                        }
-
-
-                        if (
-                            roomConnections.length ===
-                            0
-                        ) {
-
-                            delete connections[
-                                room
-                            ];
-
-                            delete messages[
-                                room
-                            ];
-
-                        }
+                        delete messages[
+                            room
+                        ];
 
                     }
+
+
+                    socket.currentRoom =
+                        null;
 
                 }
             );

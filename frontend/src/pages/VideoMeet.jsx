@@ -35,7 +35,6 @@ import {
 } from "@react-oauth/google";
 
 import {
-    useLocation,
     useNavigate,
     useParams
 } from "react-router-dom";
@@ -45,6 +44,8 @@ import {
 } from "../contexts/AuthContext";
 
 import server from "../environment";
+
+import styles from "../styles/videoComponent.module.css";
 
 
 const serverUrl = server;
@@ -66,31 +67,34 @@ const peerConfigConnections = {
 
 export default function VideoMeetComponent() {
 
-    const { url } = useParams();
+    const {
+        url
+    } = useParams();
 
-    const location = useLocation();
 
-    const navigate = useNavigate();
+    const navigate =
+        useNavigate();
 
 
     const {
         handleGoogleLogin
-    } = React.useContext(
-        AuthContext
-    );
+    } =
+        React.useContext(
+            AuthContext
+        );
 
 
     const socketRef =
         useRef(null);
 
+
     const socketIdRef =
         useRef(null);
+
 
     const localVideoRef =
         useRef(null);
 
-    const videoRefs =
-        useRef({});
 
     const connectionsRef =
         useRef({});
@@ -99,17 +103,22 @@ export default function VideoMeetComponent() {
     const [cameraAvailable, setCameraAvailable] =
         useState(true);
 
+
     const [microphoneAvailable, setMicrophoneAvailable] =
         useState(true);
+
 
     const [video, setVideo] =
         useState(true);
 
+
     const [audio, setAudio] =
         useState(true);
 
+
     const [screen, setScreen] =
         useState(false);
+
 
     const [screenAvailable, setScreenAvailable] =
         useState(false);
@@ -118,14 +127,18 @@ export default function VideoMeetComponent() {
     const [messages, setMessages] =
         useState([]);
 
+
     const [message, setMessage] =
         useState("");
+
 
     const [unreadMessages, setUnreadMessages] =
         useState(0);
 
+
     const [showChat, setShowChat] =
         useState(false);
+
 
     const [showParticipants, setShowParticipants] =
         useState(false);
@@ -163,22 +176,34 @@ export default function VideoMeetComponent() {
         useState(false);
 
 
+    const [meetingValid, setMeetingValid] =
+        useState(false);
+
+
+    const [meetingChecking, setMeetingChecking] =
+        useState(true);
+
+
     /*
     |--------------------------------------------------------------------------
-    | Helpers
+    | Meeting Code
     |--------------------------------------------------------------------------
     */
 
     const getMeetingCode = useCallback(() => {
 
-        return (
-            url ||
-            window.location.pathname
-                .replace("/", "")
-        );
+        return String(
+            url || ""
+        ).trim();
 
     }, [url]);
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    */
 
     const hasAuthenticationToken = () => {
 
@@ -193,210 +218,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Camera / Microphone Permissions
-    |--------------------------------------------------------------------------
-    */
-
-    const getPermissions = useCallback(
-        async () => {
-
-            try {
-
-                if (
-                    !navigator.mediaDevices ||
-                    !navigator.mediaDevices.getUserMedia
-                ) {
-
-                    setCameraAvailable(false);
-                    setMicrophoneAvailable(false);
-
-                    return;
-
-                }
-
-
-                try {
-
-                    const videoStream =
-                        await navigator.mediaDevices.getUserMedia({
-                            video: true
-                        });
-
-
-                    setCameraAvailable(true);
-
-
-                    videoStream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
-
-                } catch (videoError) {
-
-                    console.log(
-                        "Camera permission:",
-                        videoError
-                    );
-
-                    setCameraAvailable(false);
-
-                }
-
-
-                try {
-
-                    const audioStream =
-                        await navigator.mediaDevices.getUserMedia({
-                            audio: true
-                        });
-
-
-                    setMicrophoneAvailable(true);
-
-
-                    audioStream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
-
-                } catch (audioError) {
-
-                    console.log(
-                        "Microphone permission:",
-                        audioError
-                    );
-
-                    setMicrophoneAvailable(false);
-
-                }
-
-
-                setScreenAvailable(
-                    Boolean(
-                        navigator.mediaDevices.getDisplayMedia
-                    )
-                );
-
-
-            } catch (permissionError) {
-
-                console.error(
-                    "Permission check failed:",
-                    permissionError
-                );
-
-            }
-
-        },
-        []
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Local Media
-    |--------------------------------------------------------------------------
-    */
-
-    const createLocalStream = useCallback(
-        async (
-            includeVideo = video,
-            includeAudio = audio
-        ) => {
-
-            try {
-
-                if (
-                    window.localStream
-                ) {
-
-                    window.localStream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
-
-                }
-
-
-                if (
-                    !navigator.mediaDevices ||
-                    !navigator.mediaDevices.getUserMedia
-                ) {
-
-                    throw new Error(
-                        "Your browser does not support camera and microphone access."
-                    );
-
-                }
-
-
-                const stream =
-                    await navigator.mediaDevices.getUserMedia({
-
-                        video:
-                            includeVideo &&
-                            cameraAvailable,
-
-                        audio:
-                            includeAudio &&
-                            microphoneAvailable
-
-                    });
-
-
-                window.localStream =
-                    stream;
-
-
-                if (
-                    localVideoRef.current
-                ) {
-
-                    localVideoRef.current.srcObject =
-                        stream;
-
-                }
-
-
-                return stream;
-
-
-            } catch (mediaError) {
-
-                console.error(
-                    "Media error:",
-                    mediaError
-                );
-
-
-                setError(
-                    "Camera or microphone access failed. Please check your browser permissions."
-                );
-
-
-                return null;
-
-            }
-
-        },
-        [
-            video,
-            audio,
-            cameraAvailable,
-            microphoneAvailable
-        ]
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Guest Lobby Preview
+    | Validate Meeting
     |--------------------------------------------------------------------------
     */
 
@@ -405,58 +227,433 @@ export default function VideoMeetComponent() {
         let active = true;
 
 
-        const startPreview = async () => {
+        const validateMeeting = async () => {
 
-            await getPermissions();
+            const meetingCode =
+                getMeetingCode();
 
 
-            if (!active) {
+            if (!meetingCode) {
+
+                if (active) {
+
+                    setMeetingChecking(
+                        false
+                    );
+
+                    setMeetingValid(
+                        false
+                    );
+
+                    setError(
+                        "Meeting code is missing."
+                    );
+
+                }
+
                 return;
+
             }
 
 
             try {
 
-                if (
-                    navigator.mediaDevices &&
-                    navigator.mediaDevices.getUserMedia
-                ) {
+                setMeetingChecking(
+                    true
+                );
 
-                    const preview =
-                        await navigator.mediaDevices.getUserMedia({
-
-                            video: true,
-                            audio: true
-
-                        });
+                setError("");
 
 
-                    window.previewStream =
-                        preview;
+                const response =
+                    await fetch(
+                        `${serverUrl}/api/v1/users/meeting/${encodeURIComponent(meetingCode)}`
+                    );
 
 
-                    if (
-                        localVideoRef.current &&
-                        guestLobby
-                    ) {
+                let data = {};
 
-                        localVideoRef.current.srcObject =
-                            preview;
 
-                    }
+                try {
+
+                    data =
+                        await response.json();
+
+                } catch (jsonError) {
+
+                    data = {};
 
                 }
 
-            } catch (previewError) {
 
-                console.log(
-                    "Preview error:",
-                    previewError
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.message ||
+                        "Meeting not found"
+                    );
+
+                }
+
+
+                if (active) {
+
+                    setMeetingValid(
+                        data.valid === true
+                    );
+
+                }
+
+
+            } catch (validationError) {
+
+                console.error(
+                    "Meeting validation error:",
+                    validationError
                 );
+
+
+                if (active) {
+
+                    setMeetingValid(
+                        false
+                    );
+
+                    setError(
+                        validationError.message ||
+                        "Meeting not found"
+                    );
+
+                }
+
+            } finally {
+
+                if (active) {
+
+                    setMeetingChecking(
+                        false
+                    );
+
+                }
 
             }
 
         };
+
+
+        validateMeeting();
+
+
+        return () => {
+
+            active = false;
+
+        };
+
+    }, [
+        getMeetingCode
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permissions
+    |--------------------------------------------------------------------------
+    */
+
+    const getPermissions =
+        useCallback(
+            async () => {
+
+                try {
+
+                    if (
+                        !navigator.mediaDevices ||
+                        !navigator.mediaDevices.getUserMedia
+                    ) {
+
+                        setCameraAvailable(
+                            false
+                        );
+
+                        setMicrophoneAvailable(
+                            false
+                        );
+
+                        return;
+
+                    }
+
+
+                    try {
+
+                        const videoStream =
+                            await navigator.mediaDevices.getUserMedia({
+                                video:
+                                    true
+                            });
+
+
+                        setCameraAvailable(
+                            true
+                        );
+
+
+                        videoStream
+                            .getTracks()
+                            .forEach(
+                                track =>
+                                    track.stop()
+                            );
+
+                    } catch (videoError) {
+
+                        console.log(
+                            "Camera permission:",
+                            videoError
+                        );
+
+
+                        setCameraAvailable(
+                            false
+                        );
+
+                    }
+
+
+                    try {
+
+                        const audioStream =
+                            await navigator.mediaDevices.getUserMedia({
+                                audio:
+                                    true
+                            });
+
+
+                        setMicrophoneAvailable(
+                            true
+                        );
+
+
+                        audioStream
+                            .getTracks()
+                            .forEach(
+                                track =>
+                                    track.stop()
+                            );
+
+                    } catch (audioError) {
+
+                        console.log(
+                            "Microphone permission:",
+                            audioError
+                        );
+
+
+                        setMicrophoneAvailable(
+                            false
+                        );
+
+                    }
+
+
+                    setScreenAvailable(
+                        Boolean(
+                            navigator.mediaDevices
+                                .getDisplayMedia
+                        )
+                    );
+
+                } catch (permissionError) {
+
+                    console.error(
+                        "Permission check failed:",
+                        permissionError
+                    );
+
+                }
+
+            },
+            []
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Local Stream
+    |--------------------------------------------------------------------------
+    */
+
+    const createLocalStream =
+        useCallback(
+            async (
+                includeVideo = video,
+                includeAudio = audio
+            ) => {
+
+                try {
+
+                    if (
+                        window.localStream
+                    ) {
+
+                        window.localStream
+                            .getTracks()
+                            .forEach(
+                                track =>
+                                    track.stop()
+                            );
+
+                    }
+
+
+                    if (
+                        !navigator.mediaDevices ||
+                        !navigator.mediaDevices.getUserMedia
+                    ) {
+
+                        throw new Error(
+                            "Your browser does not support camera and microphone access."
+                        );
+
+                    }
+
+
+                    const stream =
+                        await navigator.mediaDevices.getUserMedia({
+
+                            video:
+                                includeVideo &&
+                                cameraAvailable,
+
+                            audio:
+                                includeAudio &&
+                                microphoneAvailable
+
+                        });
+
+
+                    window.localStream =
+                        stream;
+
+
+                    if (
+                        localVideoRef.current
+                    ) {
+
+                        localVideoRef.current.srcObject =
+                            stream;
+
+                    }
+
+
+                    return stream;
+
+                } catch (mediaError) {
+
+                    console.error(
+                        "Media error:",
+                        mediaError
+                    );
+
+
+                    setError(
+                        "Camera or microphone access failed. Please check your browser permissions."
+                    );
+
+
+                    return null;
+
+                }
+
+            },
+            [
+                video,
+                audio,
+                cameraAvailable,
+                microphoneAvailable
+            ]
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Preview
+    |--------------------------------------------------------------------------
+    */
+
+    useEffect(() => {
+
+        if (
+            meetingChecking ||
+            !meetingValid ||
+            !guestLobby
+        ) {
+
+            return;
+
+        }
+
+
+        let active = true;
+
+
+        const startPreview =
+            async () => {
+
+                await getPermissions();
+
+
+                if (!active) {
+                    return;
+                }
+
+
+                try {
+
+                    if (
+                        navigator.mediaDevices &&
+                        navigator.mediaDevices.getUserMedia
+                    ) {
+
+                        const preview =
+                            await navigator.mediaDevices.getUserMedia({
+
+                                video:
+                                    true,
+
+                                audio:
+                                    true
+
+                            });
+
+
+                        window.previewStream =
+                            preview;
+
+
+                        if (
+                            localVideoRef.current &&
+                            guestLobby
+                        ) {
+
+                            localVideoRef.current.srcObject =
+                                preview;
+
+                        }
+
+                    }
+
+                } catch (previewError) {
+
+                    console.log(
+                        "Preview error:",
+                        previewError
+                    );
+
+                }
+
+            };
 
 
         startPreview();
@@ -470,7 +667,9 @@ export default function VideoMeetComponent() {
 
     }, [
         getPermissions,
-        guestLobby
+        guestLobby,
+        meetingChecking,
+        meetingValid
     ]);
 
 
@@ -514,124 +713,128 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Replace Local Tracks
+    | Replace Local Stream
     |--------------------------------------------------------------------------
     */
 
-    const replaceLocalStream = async (
-        newStream
-    ) => {
+    const replaceLocalStream =
+        async (
+            newStream
+        ) => {
 
-        try {
+            try {
 
-            if (
-                window.localStream
-            ) {
+                if (
+                    window.localStream
+                ) {
 
-                window.localStream
-                    .getTracks()
-                    .forEach(
-                        track =>
-                            track.stop()
-                    );
+                    window.localStream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
 
-            }
-
-
-            window.localStream =
-                newStream;
+                }
 
 
-            if (
-                localVideoRef.current
-            ) {
-
-                localVideoRef.current.srcObject =
+                window.localStream =
                     newStream;
 
-            }
-
-
-            for (
-                const peerId in connectionsRef.current
-            ) {
-
-                const peer =
-                    connectionsRef.current[
-                        peerId
-                    ];
-
-
-                const senders =
-                    peer.getSenders();
-
-
-                const videoTrack =
-                    newStream
-                        ?.getVideoTracks()[0];
-
-
-                const audioTrack =
-                    newStream
-                        ?.getAudioTracks()[0];
-
-
-                const videoSender =
-                    senders.find(
-                        sender =>
-                            sender.track &&
-                            sender.track.kind === "video"
-                    );
-
-
-                const audioSender =
-                    senders.find(
-                        sender =>
-                            sender.track &&
-                            sender.track.kind === "audio"
-                    );
-
 
                 if (
-                    videoSender &&
-                    videoTrack
+                    localVideoRef.current
                 ) {
 
-                    await videoSender.replaceTrack(
+                    localVideoRef.current.srcObject =
+                        newStream;
+
+                }
+
+
+                for (
+                    const peerId in
+                    connectionsRef.current
+                ) {
+
+                    const peer =
+                        connectionsRef.current[
+                            peerId
+                        ];
+
+
+                    const senders =
+                        peer.getSenders();
+
+
+                    const videoTrack =
+                        newStream
+                            ?.getVideoTracks()[0];
+
+
+                    const audioTrack =
+                        newStream
+                            ?.getAudioTracks()[0];
+
+
+                    const videoSender =
+                        senders.find(
+                            sender =>
+                                sender.track &&
+                                sender.track.kind ===
+                                    "video"
+                        );
+
+
+                    const audioSender =
+                        senders.find(
+                            sender =>
+                                sender.track &&
+                                sender.track.kind ===
+                                    "audio"
+                        );
+
+
+                    if (
+                        videoSender &&
                         videoTrack
-                    );
+                    ) {
 
-                }
+                        await videoSender.replaceTrack(
+                            videoTrack
+                        );
+
+                    }
 
 
-                if (
-                    audioSender &&
-                    audioTrack
-                ) {
-
-                    await audioSender.replaceTrack(
+                    if (
+                        audioSender &&
                         audioTrack
-                    );
+                    ) {
+
+                        await audioSender.replaceTrack(
+                            audioTrack
+                        );
+
+                    }
 
                 }
+
+            } catch (streamError) {
+
+                console.error(
+                    "Stream replacement error:",
+                    streamError
+                );
 
             }
 
-        } catch (streamError) {
-
-            console.error(
-                "Stream replacement error:",
-                streamError
-            );
-
-        }
-
-    };
+        };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Send Signaling Message
+    | Signaling
     |--------------------------------------------------------------------------
     */
 
@@ -648,7 +851,9 @@ export default function VideoMeetComponent() {
             socketRef.current.emit(
                 "signal",
                 targetId,
-                JSON.stringify(data)
+                JSON.stringify(
+                    data
+                )
             );
 
         }
@@ -662,221 +867,233 @@ export default function VideoMeetComponent() {
     |--------------------------------------------------------------------------
     */
 
-    const createOffer = async (
-        targetId
-    ) => {
+    const createOffer =
+        async (
+            targetId
+        ) => {
 
-        const peer =
-            connectionsRef.current[
-                targetId
-            ];
-
-
-        if (!peer) {
-            return;
-        }
+            const peer =
+                connectionsRef.current[
+                    targetId
+                ];
 
 
-        try {
-
-            const description =
-                await peer.createOffer();
-
-
-            await peer.setLocalDescription(
-                description
-            );
+            if (!peer) {
+                return;
+            }
 
 
-            sendSignal(
-                targetId,
-                {
-                    sdp:
-                        peer.localDescription
-                }
-            );
+            try {
+
+                const description =
+                    await peer.createOffer();
 
 
-        } catch (offerError) {
+                await peer.setLocalDescription(
+                    description
+                );
 
-            console.error(
-                "Offer error:",
-                offerError
-            );
 
-        }
+                sendSignal(
+                    targetId,
+                    {
+                        sdp:
+                            peer.localDescription
+                    }
+                );
 
-    };
+            } catch (offerError) {
+
+                console.error(
+                    "Offer error:",
+                    offerError
+                );
+
+            }
+
+        };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Create Peer Connection
+    | Peer Connection
     |--------------------------------------------------------------------------
     */
 
-    const createPeerConnection = useCallback(
-        (
-            remoteId
-        ) => {
-
-            if (
-                connectionsRef.current[
-                    remoteId
-                ]
-            ) {
-
-                return connectionsRef.current[
-                    remoteId
-                ];
-
-            }
-
-
-            const peer =
-                new RTCPeerConnection(
-                    peerConfigConnections
-                );
-
-
-            connectionsRef.current[
+    const createPeerConnection =
+        useCallback(
+            (
                 remoteId
-            ] = peer;
+            ) => {
+
+                if (
+                    connectionsRef.current[
+                        remoteId
+                    ]
+                ) {
+
+                    return connectionsRef.current[
+                        remoteId
+                    ];
+
+                }
 
 
-            peer.onicecandidate =
-                event => {
-
-                    if (
-                        event.candidate
-                    ) {
-
-                        sendSignal(
-                            remoteId,
-                            {
-                                ice:
-                                    event.candidate
-                            }
-                        );
-
-                    }
-
-                };
-
-
-            peer.ontrack =
-                event => {
-
-                    const stream =
-                        event.streams[0];
-
-
-                    setVideos(
-                        currentVideos => {
-
-                            const existing =
-                                currentVideos.find(
-                                    item =>
-                                        item.socketId ===
-                                        remoteId
-                                );
-
-
-                            if (
-                                existing
-                            ) {
-
-                                return currentVideos.map(
-                                    item =>
-                                        item.socketId ===
-                                        remoteId
-                                            ? {
-                                                ...item,
-                                                stream
-                                            }
-                                            : item
-                                );
-
-                            }
-
-
-                            return [
-
-                                ...currentVideos,
-
-                                {
-                                    socketId:
-                                        remoteId,
-
-                                    stream
-                                }
-
-                            ];
-
-                        }
+                const peer =
+                    new RTCPeerConnection(
+                        peerConfigConnections
                     );
 
-                };
+
+                connectionsRef.current[
+                    remoteId
+                ] =
+                    peer;
 
 
-            peer.onconnectionstatechange =
-                () => {
+                peer.onicecandidate =
+                    event => {
 
-                    const state =
-                        peer.connectionState;
+                        if (
+                            event.candidate
+                        ) {
 
-
-                    if (
-                        state ===
-                        "failed" ||
-                        state ===
-                        "closed"
-                    ) {
-
-                        try {
-
-                            peer.close();
-
-                        } catch (closeError) {
-
-                            console.log(
-                                closeError
+                            sendSignal(
+                                remoteId,
+                                {
+                                    ice:
+                                        event.candidate
+                                }
                             );
 
                         }
 
-
-                        delete connectionsRef.current[
-                            remoteId
-                        ];
-
-                    }
-
-                };
+                    };
 
 
-            if (
-                window.localStream
-            ) {
+                peer.ontrack =
+                    event => {
 
-                window.localStream
-                    .getTracks()
-                    .forEach(
-                        track =>
-                            peer.addTrack(
-                                track,
-                                window.localStream
-                            )
-                    );
-
-            }
+                        const stream =
+                            event.streams[0];
 
 
-            return peer;
+                        setVideos(
+                            currentVideos => {
 
-        },
-        []
-    );
+                                const existing =
+                                    currentVideos.find(
+                                        item =>
+                                            item.socketId ===
+                                            remoteId
+                                    );
+
+
+                                if (
+                                    existing
+                                ) {
+
+                                    return currentVideos.map(
+                                        item =>
+                                            item.socketId ===
+                                            remoteId
+                                                ? {
+                                                    ...item,
+                                                    stream
+                                                }
+                                                : item
+                                    );
+
+                                }
+
+
+                                return [
+
+                                    ...currentVideos,
+
+                                    {
+                                        socketId:
+                                            remoteId,
+
+                                        stream
+                                    }
+
+                                ];
+
+                            }
+                        );
+
+                    };
+
+
+                peer.onconnectionstatechange =
+                    () => {
+
+                        const state =
+                            peer.connectionState;
+
+
+                        if (
+                            state === "failed" ||
+                            state === "closed"
+                        ) {
+
+                            try {
+
+                                peer.close();
+
+                            } catch (
+                                closeError
+                            ) {
+
+                                console.log(
+                                    closeError
+                                );
+
+                            }
+
+
+                            delete connectionsRef.current[
+                                remoteId
+                            ];
+
+
+                            setVideos(
+                                currentVideos =>
+                                    currentVideos.filter(
+                                        item =>
+                                            item.socketId !==
+                                            remoteId
+                                    )
+                            );
+
+                        }
+
+                    };
+
+
+                if (
+                    window.localStream
+                ) {
+
+                    window.localStream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                peer.addTrack(
+                                    track,
+                                    window.localStream
+                                )
+                        );
+
+                }
+
+
+                return peer;
+
+            },
+            []
+        );
 
 
     /*
@@ -885,172 +1102,204 @@ export default function VideoMeetComponent() {
     |--------------------------------------------------------------------------
     */
 
-    const gotMessageFromServer = useCallback(
-        async (
-            fromId,
-            messageData
-        ) => {
+    const gotMessageFromServer =
+        useCallback(
+            async (
+                fromId,
+                messageData
+            ) => {
 
-            try {
+                try {
 
-                const signal =
-                    JSON.parse(
-                        messageData
-                    );
-
-
-                const peer =
-                    createPeerConnection(
-                        fromId
-                    );
+                    const signal =
+                        JSON.parse(
+                            messageData
+                        );
 
 
-                if (
-                    signal.sdp
-                ) {
-
-                    await peer.setRemoteDescription(
-                        new RTCSessionDescription(
-                            signal.sdp
-                        )
-                    );
+                    const peer =
+                        createPeerConnection(
+                            fromId
+                        );
 
 
                     if (
-                        signal.sdp.type ===
-                        "offer"
+                        signal.sdp
                     ) {
 
-                        const answer =
-                            await peer.createAnswer();
-
-
-                        await peer.setLocalDescription(
-                            answer
-                        );
-
-
-                        sendSignal(
-                            fromId,
-                            {
-                                sdp:
-                                    peer.localDescription
-                            }
-                        );
-
-                    }
-
-                }
-
-
-                if (
-                    signal.ice
-                ) {
-
-                    try {
-
-                        await peer.addIceCandidate(
-                            new RTCIceCandidate(
-                                signal.ice
+                        await peer.setRemoteDescription(
+                            new RTCSessionDescription(
+                                signal.sdp
                             )
                         );
 
-                    } catch (
-                        iceError
-                    ) {
 
-                        console.log(
-                            "ICE error:",
-                            iceError
-                        );
+                        if (
+                            signal.sdp.type ===
+                            "offer"
+                        ) {
+
+                            const answer =
+                                await peer.createAnswer();
+
+
+                            await peer.setLocalDescription(
+                                answer
+                            );
+
+
+                            sendSignal(
+                                fromId,
+                                {
+                                    sdp:
+                                        peer.localDescription
+                                }
+                            );
+
+                        }
 
                     }
+
+
+                    if (
+                        signal.ice
+                    ) {
+
+                        try {
+
+                            await peer.addIceCandidate(
+                                new RTCIceCandidate(
+                                    signal.ice
+                                )
+                            );
+
+                        } catch (
+                            iceError
+                        ) {
+
+                            console.log(
+                                "ICE error:",
+                                iceError
+                            );
+
+                        }
+
+                    }
+
+                } catch (signalError) {
+
+                    console.error(
+                        "Signal handling error:",
+                        signalError
+                    );
 
                 }
 
-            } catch (signalError) {
-
-                console.error(
-                    "Signal handling error:",
-                    signalError
-                );
-
-            }
-
-        },
-        [
-            createPeerConnection
-        ]
-    );
+            },
+            [
+                createPeerConnection
+            ]
+        );
 
 
     /*
     |--------------------------------------------------------------------------
-    | Add Message
+    | Chat
     |--------------------------------------------------------------------------
     */
 
-    const addMessage = useCallback(
-        (
-            data,
-            sender,
-            senderSocketId
-        ) => {
+    const addMessage =
+        useCallback(
+            (
+                data,
+                sender,
+                senderSocketId
+            ) => {
 
-            setMessages(
-                previousMessages => [
+                setMessages(
+                    previousMessages => [
 
-                    ...previousMessages,
+                        ...previousMessages,
 
-                    {
-                        sender:
-                            sender ||
-                            "Participant",
+                        {
+                            sender:
+                                sender ||
+                                "Participant",
 
-                        data:
-                            data,
+                            data:
+                                data,
 
-                        time:
-                            new Date()
-                                .toLocaleTimeString(
-                                    [],
-                                    {
-                                        hour:
-                                            "2-digit",
+                            time:
+                                new Date()
+                                    .toLocaleTimeString(
+                                        [],
+                                        {
+                                            hour:
+                                                "2-digit",
 
-                                        minute:
-                                            "2-digit"
-                                    }
-                                )
-                    }
+                                            minute:
+                                                "2-digit"
+                                        }
+                                    )
+                        }
 
-                ]
-            );
+                    ]
+                );
+
+
+                if (
+                    senderSocketId !==
+                    socketIdRef.current &&
+                    !showChat
+                ) {
+
+                    setUnreadMessages(
+                        previous =>
+                            previous + 1
+                    );
+
+                }
+
+            },
+            [
+                showChat
+            ]
+        );
+
+
+    const sendMessage =
+        () => {
+
+            const cleanMessage =
+                message.trim();
 
 
             if (
-                senderSocketId !==
-                socketIdRef.current &&
-                !showChat
+                !cleanMessage ||
+                !socketRef.current ||
+                !socketRef.current.connected
             ) {
 
-                setUnreadMessages(
-                    previous =>
-                        previous + 1
-                );
+                return;
 
             }
 
-        },
-        [
-            showChat
-        ]
-    );
+
+            socketRef.current.emit(
+                "chat-message",
+                cleanMessage,
+                username
+            );
+
+
+            setMessage("");
+
+        };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Socket Connection
+    | Socket
     |--------------------------------------------------------------------------
     */
 
@@ -1070,7 +1319,11 @@ export default function VideoMeetComponent() {
                         "Please sign in with Google before joining the call."
                     );
 
-                    setGuestLobby(true);
+
+                    setGuestLobby(
+                        true
+                    );
+
 
                     return;
 
@@ -1085,7 +1338,9 @@ export default function VideoMeetComponent() {
 
                         socketRef.current.disconnect();
 
-                    } catch (disconnectError) {
+                    } catch (
+                        disconnectError
+                    ) {
 
                         console.log(
                             disconnectError
@@ -1100,6 +1355,7 @@ export default function VideoMeetComponent() {
                     io.connect(
                         serverUrl,
                         {
+
                             auth: {
                                 token:
                                     token
@@ -1109,6 +1365,7 @@ export default function VideoMeetComponent() {
                                 "websocket",
                                 "polling"
                             ]
+
                         }
                     );
 
@@ -1142,6 +1399,12 @@ export default function VideoMeetComponent() {
 
 
                 socket.on(
+                    "chat-message",
+                    addMessage
+                );
+
+
+                socket.on(
                     "connect",
                     () => {
 
@@ -1152,12 +1415,6 @@ export default function VideoMeetComponent() {
                         socket.emit(
                             "join-call",
                             window.location.href
-                        );
-
-
-                        socket.on(
-                            "chat-message",
-                            addMessage
                         );
 
 
@@ -1267,8 +1524,6 @@ export default function VideoMeetComponent() {
                         );
 
                     }
-
-
                 );
 
             },
@@ -1318,7 +1573,9 @@ export default function VideoMeetComponent() {
             }
 
 
-            setJoining(true);
+            setJoining(
+                true
+            );
 
 
             stopPreview();
@@ -1333,27 +1590,33 @@ export default function VideoMeetComponent() {
 
             if (!stream) {
 
-                setJoining(false);
+                setJoining(
+                    false
+                );
 
                 return;
 
             }
 
 
-            setGuestLobby(false);
+            setGuestLobby(
+                false
+            );
 
 
             await connectToSocketServer();
 
 
-            setJoining(false);
+            setJoining(
+                false
+            );
 
         };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Google Login From Gate
+    | Google Login
     |--------------------------------------------------------------------------
     */
 
@@ -1412,12 +1675,9 @@ export default function VideoMeetComponent() {
                 );
 
 
-                setGuestLobby(
-                    false
+                setJoining(
+                    true
                 );
-
-
-                setJoining(true);
 
 
                 stopPreview();
@@ -1432,17 +1692,26 @@ export default function VideoMeetComponent() {
 
                 if (!stream) {
 
-                    setJoining(false);
+                    setJoining(
+                        false
+                    );
 
                     return;
 
                 }
 
 
+                setGuestLobby(
+                    false
+                );
+
+
                 await connectToSocketServer();
 
 
-                setJoining(false);
+                setJoining(
+                    false
+                );
 
 
             } catch (googleError) {
@@ -1477,7 +1746,7 @@ export default function VideoMeetComponent() {
     */
 
     const handleVideo =
-        async () => {
+        () => {
 
             const nextVideo =
                 !video;
@@ -1492,19 +1761,16 @@ export default function VideoMeetComponent() {
                 window.localStream
             ) {
 
-                const videoTracks =
-                    window.localStream
-                        .getVideoTracks();
+                window.localStream
+                    .getVideoTracks()
+                    .forEach(
+                        track => {
 
+                            track.enabled =
+                                nextVideo;
 
-                videoTracks.forEach(
-                    track => {
-
-                        track.enabled =
-                            nextVideo;
-
-                    }
-                );
+                        }
+                    );
 
             }
 
@@ -1533,19 +1799,16 @@ export default function VideoMeetComponent() {
                 window.localStream
             ) {
 
-                const audioTracks =
-                    window.localStream
-                        .getAudioTracks();
+                window.localStream
+                    .getAudioTracks()
+                    .forEach(
+                        track => {
 
+                            track.enabled =
+                                nextAudio;
 
-                audioTracks.forEach(
-                    track => {
-
-                        track.enabled =
-                            nextAudio;
-
-                    }
-                );
+                        }
+                    );
 
             }
 
@@ -1575,7 +1838,9 @@ export default function VideoMeetComponent() {
                 screen
             ) {
 
-                setScreen(false);
+                setScreen(
+                    false
+                );
 
 
                 const stream =
@@ -1606,13 +1871,18 @@ export default function VideoMeetComponent() {
                 const displayStream =
                     await navigator.mediaDevices.getDisplayMedia(
                         {
-                            video: true,
-                            audio: true
+                            video:
+                                true,
+
+                            audio:
+                                true
                         }
                     );
 
 
-                setScreen(true);
+                setScreen(
+                    true
+                );
 
 
                 await replaceLocalStream(
@@ -1672,43 +1942,51 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Send Chat Message
+    | Copy Meeting Link
     |--------------------------------------------------------------------------
     */
 
-    const sendMessage =
-        () => {
+    const copyMeetingLink =
+        async () => {
 
-            const cleanMessage =
-                message.trim();
+            try {
+
+                await navigator.clipboard.writeText(
+                    window.location.href
+                );
 
 
-            if (
-                !cleanMessage ||
-                !socketRef.current ||
-                !socketRef.current.connected
-            ) {
+                setCopied(
+                    true
+                );
 
-                return;
+
+                setTimeout(
+                    () => {
+
+                        setCopied(
+                            false
+                        );
+
+                    },
+                    1800
+                );
+
+            } catch (copyError) {
+
+                console.error(
+                    "Copy failed:",
+                    copyError
+                );
 
             }
-
-
-            socketRef.current.emit(
-                "chat-message",
-                cleanMessage,
-                username
-            );
-
-
-            setMessage("");
 
         };
 
 
     /*
     |--------------------------------------------------------------------------
-    | End Meeting
+    | End Call
     |--------------------------------------------------------------------------
     */
 
@@ -1743,7 +2021,6 @@ export default function VideoMeetComponent() {
                         );
 
                 }
-
 
             } catch (mediaError) {
 
@@ -1823,51 +2100,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Copy Meeting Link
-    |--------------------------------------------------------------------------
-    */
-
-    const copyMeetingLink =
-        async () => {
-
-            try {
-
-                await navigator.clipboard.writeText(
-                    window.location.href
-                );
-
-
-                setCopied(
-                    true
-                );
-
-
-                setTimeout(
-                    () => {
-
-                        setCopied(
-                            false
-                        );
-
-                    },
-                    1800
-                );
-
-            } catch (copyError) {
-
-                console.error(
-                    "Copy failed:",
-                    copyError
-                );
-
-            }
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Toggle Chat
+    | Panels
     |--------------------------------------------------------------------------
     */
 
@@ -1884,18 +2117,13 @@ export default function VideoMeetComponent() {
                 0
             );
 
+
             setShowParticipants(
                 false
             );
 
         };
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Toggle Participants
-    |--------------------------------------------------------------------------
-    */
 
     const toggleParticipants =
         () => {
@@ -1951,7 +2179,6 @@ export default function VideoMeetComponent() {
                         );
 
                 }
-
 
             } catch (cleanupError) {
 
@@ -2012,13 +2239,217 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Render
+    | Checking Meeting
     |--------------------------------------------------------------------------
     */
 
-    const meetingCode =
-        getMeetingCode();
+    if (
+        meetingChecking
+    ) {
 
+        return (
+
+            <Box
+                sx={{
+                    minHeight:
+                        "100dvh",
+
+                    display:
+                        "flex",
+
+                    flexDirection:
+                        "column",
+
+                    alignItems:
+                        "center",
+
+                    justifyContent:
+                        "center",
+
+                    background:
+                        "#f7f9fc",
+
+                    p:
+                        3
+                }}
+            >
+
+                <CircularProgress />
+
+                <Typography
+                    sx={{
+                        mt:
+                            2,
+
+                        color:
+                            "#667085"
+                    }}
+                >
+                    Checking meeting...
+                </Typography>
+
+            </Box>
+
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invalid Meeting
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        !meetingValid
+    ) {
+
+        return (
+
+            <Box
+                sx={{
+                    minHeight:
+                        "100dvh",
+
+                    display:
+                        "flex",
+
+                    alignItems:
+                        "center",
+
+                    justifyContent:
+                        "center",
+
+                    background:
+                        "linear-gradient(135deg,#f7faff,#eef4ff)",
+
+                    p:
+                        3
+                }}
+            >
+
+                <Box
+                    sx={{
+                        width:
+                            "100%",
+
+                        maxWidth:
+                            440,
+
+                        background:
+                            "#fff",
+
+                        borderRadius:
+                            4,
+
+                        p:
+                            {
+                                xs:
+                                    3,
+
+                                sm:
+                                    4
+                            },
+
+                        textAlign:
+                            "center",
+
+                        boxShadow:
+                            "0 20px 60px rgba(15,23,42,0.10)"
+                    }}
+                >
+
+                    <Typography
+                        sx={{
+                            fontSize:
+                                "3rem",
+
+                            fontWeight:
+                                800,
+
+                            color:
+                                "#1976d2",
+
+                            mb:
+                                1
+                        }}
+                    >
+                        404
+                    </Typography>
+
+
+                    <Typography
+                        sx={{
+                            fontSize:
+                                "1.5rem",
+
+                            fontWeight:
+                                800,
+
+                            color:
+                                "#171b2d",
+
+                            mb:
+                                1
+                        }}
+                    >
+                        Meeting not found
+                    </Typography>
+
+
+                    <Typography
+                        sx={{
+                            color:
+                                "#667085",
+
+                            lineHeight:
+                                1.6,
+
+                            mb:
+                                3
+                        }}
+                    >
+                        {error ||
+                            "This meeting code is invalid or the meeting does not exist."}
+                    </Typography>
+
+
+                    <Button
+                        variant="contained"
+                        onClick={() =>
+                            navigate(
+                                "/"
+                            )
+                        }
+                        sx={{
+                            borderRadius:
+                                2.5,
+
+                            textTransform:
+                                "none",
+
+                            fontWeight:
+                                700
+                        }}
+                    >
+                        Back to Home
+                    </Button>
+
+                </Box>
+
+            </Box>
+
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Lobby
+    |--------------------------------------------------------------------------
+    */
 
     if (
         guestLobby
@@ -2046,10 +2477,14 @@ export default function VideoMeetComponent() {
                     justifyContent:
                         "center",
 
-                    p: {
-                        xs: 2,
-                        sm: 3
-                    }
+                    p:
+                        {
+                            xs:
+                                2,
+
+                            sm:
+                                3
+                        }
                 }}
             >
 
@@ -2075,8 +2510,11 @@ export default function VideoMeetComponent() {
 
                         gap:
                             {
-                                xs: 2,
-                                md: 3
+                                xs:
+                                    2,
+
+                                md:
+                                    3
                             }
                     }}
                 >
@@ -2102,8 +2540,11 @@ export default function VideoMeetComponent() {
 
                             borderRadius:
                                 {
-                                    xs: 3,
-                                    sm: 4
+                                    xs:
+                                        3,
+
+                                    sm:
+                                        4
                                 },
 
                             overflow:
@@ -2204,100 +2645,6 @@ export default function VideoMeetComponent() {
 
                             </Box>
 
-
-                            <Box
-                                sx={{
-                                    display:
-                                        "flex",
-
-                                    gap:
-                                        0.8
-                                }}
-                            >
-
-                                <Box
-                                    sx={{
-                                        width:
-                                            34,
-
-                                        height:
-                                            34,
-
-                                        borderRadius:
-                                            "50%",
-
-                                        display:
-                                            "flex",
-
-                                        alignItems:
-                                            "center",
-
-                                        justifyContent:
-                                            "center",
-
-                                        background:
-                                            "rgba(0,0,0,0.55)",
-
-                                        color:
-                                            "#fff"
-                                    }}
-                                >
-
-                                    {cameraAvailable ? (
-                                        <VideocamIcon
-                                            fontSize="small"
-                                        />
-                                    ) : (
-                                        <VideocamOffIcon
-                                            fontSize="small"
-                                        />
-                                    )}
-
-                                </Box>
-
-
-                                <Box
-                                    sx={{
-                                        width:
-                                            34,
-
-                                        height:
-                                            34,
-
-                                        borderRadius:
-                                            "50%",
-
-                                        display:
-                                            "flex",
-
-                                        alignItems:
-                                            "center",
-
-                                        justifyContent:
-                                            "center",
-
-                                        background:
-                                            "rgba(0,0,0,0.55)",
-
-                                        color:
-                                            "#fff"
-                                    }}
-                                >
-
-                                    {microphoneAvailable ? (
-                                        <MicIcon
-                                            fontSize="small"
-                                        />
-                                    ) : (
-                                        <MicOffIcon
-                                            fontSize="small"
-                                        />
-                                    )}
-
-                                </Box>
-
-                            </Box>
-
                         </Box>
 
                     </Box>
@@ -2312,14 +2659,20 @@ export default function VideoMeetComponent() {
 
                             borderRadius:
                                 {
-                                    xs: 3,
-                                    sm: 4
+                                    xs:
+                                        3,
+
+                                    sm:
+                                        4
                                 },
 
                             p:
                                 {
-                                    xs: 2.5,
-                                    sm: 4
+                                    xs:
+                                        2.5,
+
+                                    sm:
+                                        4
                                 },
 
                             display:
@@ -2416,12 +2769,10 @@ export default function VideoMeetComponent() {
                                     2.5
                             }}
                         >
-                            You're about to join meeting{" "}
+                            Meeting code:{" "}
                             <strong>
-                                {meetingCode}
+                                {getMeetingCode()}
                             </strong>
-                            . Preview your camera and
-                            microphone first.
                         </Typography>
 
 
@@ -2587,7 +2938,7 @@ export default function VideoMeetComponent() {
                 </Box>
 
 
-                {/* Login Gate */}
+                {/* Google login gate */}
 
                 {showLoginGate && (
 
@@ -2638,8 +2989,11 @@ export default function VideoMeetComponent() {
 
                                 p:
                                     {
-                                        xs: 3,
-                                        sm: 4
+                                        xs:
+                                            3,
+
+                                        sm:
+                                            4
                                     },
 
                                 textAlign:
@@ -2677,7 +3031,10 @@ export default function VideoMeetComponent() {
                                         "center",
 
                                     justifyContent:
-                                        "center"
+                                        "center",
+
+                                    fontSize:
+                                        "28px"
                                 }}
                             >
                                 🔐
@@ -2738,10 +3095,12 @@ export default function VideoMeetComponent() {
                                             "none"
                                     }}
                                 >
+
                                     <CircularProgress
                                         size={20}
                                         color="inherit"
                                     />
+
                                 </Button>
 
                             ) : (
@@ -2805,9 +3164,18 @@ export default function VideoMeetComponent() {
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Actual Meeting
+    |--------------------------------------------------------------------------
+    */
+
     return (
 
         <Box
+            className={
+                styles.meetVideoContainer
+            }
             sx={{
                 minHeight:
                     "100dvh",
@@ -2829,14 +3197,19 @@ export default function VideoMeetComponent() {
             }}
         >
 
-            {/* Top bar */}
+            {/* =====================================================
+                HEADER
+            ====================================================== */}
 
             <Box
                 sx={{
                     minHeight:
                         {
-                            xs: 56,
-                            sm: 64
+                            xs:
+                                56,
+
+                            sm:
+                                64
                         },
 
                     display:
@@ -2850,8 +3223,11 @@ export default function VideoMeetComponent() {
 
                     px:
                         {
-                            xs: 1.2,
-                            sm: 2
+                            xs:
+                                1.2,
+
+                            sm:
+                                2
                         },
 
                     gap:
@@ -2874,10 +3250,7 @@ export default function VideoMeetComponent() {
                             "center",
 
                         gap:
-                            {
-                                xs: 0.6,
-                                sm: 1
-                            },
+                            0.7,
 
                         minWidth:
                             0
@@ -2916,16 +3289,7 @@ export default function VideoMeetComponent() {
 
                                         sm:
                                             "1.05rem"
-                                    },
-
-                                whiteSpace:
-                                    "nowrap",
-
-                                overflow:
-                                    "hidden",
-
-                                textOverflow:
-                                    "ellipsis"
+                                    }
                             }}
                         >
                             ApnaaZoom
@@ -2947,10 +3311,16 @@ export default function VideoMeetComponent() {
                                     },
 
                                 whiteSpace:
-                                    "nowrap"
+                                    "nowrap",
+
+                                overflow:
+                                    "hidden",
+
+                                textOverflow:
+                                    "ellipsis"
                             }}
                         >
-                            Meeting • {meetingCode}
+                            Meeting • {getMeetingCode()}
                         </Typography>
 
                     </Box>
@@ -3040,7 +3410,9 @@ export default function VideoMeetComponent() {
             </Box>
 
 
-            {/* Meeting area */}
+            {/* =====================================================
+                MEETING CONTENT
+            ====================================================== */}
 
             <Box
                 sx={{
@@ -3058,9 +3430,10 @@ export default function VideoMeetComponent() {
                 }}
             >
 
-                {/* Video area */}
-
                 <Box
+                    className={
+                        styles.conferenceView
+                    }
                     sx={{
                         flex:
                             1,
@@ -3069,58 +3442,7 @@ export default function VideoMeetComponent() {
                             0,
 
                         minHeight:
-                            0,
-
-                        p:
-                            {
-                                xs:
-                                    1,
-
-                                sm:
-                                    1.5,
-
-                                md:
-                                    2
-                            },
-
-                        display:
-                            "grid",
-
-                        gridTemplateColumns:
-                            {
-                                xs:
-                                    "1fr",
-
-                                sm:
-                                    videos.length <= 1
-                                        ? "1fr"
-                                        : "repeat(2, minmax(0, 1fr))",
-
-                                md:
-                                    videos.length <= 1
-                                        ? "1fr"
-                                        : videos.length <= 3
-                                            ? "repeat(2, minmax(0, 1fr))"
-                                            : "repeat(3, minmax(0, 1fr))"
-                            },
-
-                        gridAutoRows:
-                            "minmax(0, 1fr)",
-
-                        gap:
-                            {
-                                xs:
-                                    1,
-
-                                sm:
-                                    1.25,
-
-                                md:
-                                    1.5
-                            },
-
-                        overflowY:
-                            "auto"
+                            0
                     }}
                 >
 
@@ -3149,37 +3471,24 @@ export default function VideoMeetComponent() {
                             minHeight:
                                 {
                                     xs:
-                                        "220px",
+                                        220,
 
                                     sm:
-                                        "260px"
-                                },
-
-                            border:
-                                "1px solid rgba(255,255,255,0.06)"
+                                        260
+                                }
                         }}
                     >
 
                         <video
+                            className={
+                                styles.meetUserVideo
+                            }
                             ref={
                                 localVideoRef
                             }
                             autoPlay
                             muted
                             playsInline
-                            style={{
-                                width:
-                                    "100%",
-
-                                height:
-                                    "100%",
-
-                                objectFit:
-                                    "cover",
-
-                                transform:
-                                    "scaleX(-1)"
-                            }}
                         />
 
 
@@ -3237,12 +3546,14 @@ export default function VideoMeetComponent() {
                                             800
                                     }}
                                 >
+
                                     {(
                                         username ||
                                         "U"
                                     )
                                         .charAt(0)
                                         .toUpperCase()}
+
                                 </Box>
 
                             </Box>
@@ -3271,10 +3582,7 @@ export default function VideoMeetComponent() {
                                     1.5,
 
                                 background:
-                                    "rgba(0,0,0,0.55)",
-
-                                backdropFilter:
-                                    "blur(8px)"
+                                    "rgba(0,0,0,0.55)"
                             }}
                         >
 
@@ -3293,7 +3601,8 @@ export default function VideoMeetComponent() {
                                         600
                                 }}
                             >
-                                {username || "You"}
+                                {username ||
+                                    "You"}
                             </Typography>
 
                         </Box>
@@ -3380,14 +3689,11 @@ export default function VideoMeetComponent() {
                                     minHeight:
                                         {
                                             xs:
-                                                "220px",
+                                                220,
 
                                             sm:
-                                                "260px"
-                                        },
-
-                                    border:
-                                        "1px solid rgba(255,255,255,0.06)"
+                                                260
+                                        }
                                 }}
                             >
 
@@ -3406,12 +3712,6 @@ export default function VideoMeetComponent() {
                                                     remoteVideo.stream;
 
                                             }
-
-
-                                            videoRefs.current[
-                                                remoteVideo.socketId
-                                            ] =
-                                                element;
 
                                         }
                                     }
@@ -3449,23 +3749,14 @@ export default function VideoMeetComponent() {
                                             1.5,
 
                                         background:
-                                            "rgba(0,0,0,0.55)",
-
-                                        backdropFilter:
-                                            "blur(8px)"
+                                            "rgba(0,0,0,0.55)"
                                     }}
                                 >
 
                                     <Typography
                                         sx={{
                                             fontSize:
-                                                {
-                                                    xs:
-                                                        "0.75rem",
-
-                                                    sm:
-                                                        "0.82rem"
-                                                },
+                                                "0.8rem",
 
                                             fontWeight:
                                                 600
@@ -3484,386 +3775,305 @@ export default function VideoMeetComponent() {
                 </Box>
 
 
-                {/* Chat panel */}
+                {/* =================================================
+                    CHAT
+                ================================================== */}
 
                 {showChat && (
 
                     <Box
-                        sx={{
-                            position:
-                                "absolute",
-
-                            right:
-                                {
-                                    xs:
-                                        0,
-
-                                    sm:
-                                        16
-                                },
-
-                            top:
-                                {
-                                    xs:
-                                        0,
-
-                                    sm:
-                                        16
-                                },
-
-                            bottom:
-                                {
-                                    xs:
-                                        0,
-
-                                    sm:
-                                        16
-                                },
-
-                            width:
-                                {
-                                    xs:
-                                        "100%",
-
-                                    sm:
-                                        360
-                                },
-
-                            background:
-                                "#fff",
-
-                            color:
-                                "#111827",
-
-                            zIndex:
-                                20,
-
-                            display:
-                                "flex",
-
-                            flexDirection:
-                                "column",
-
-                            borderRadius:
-                                {
-                                    xs:
-                                        0,
-
-                                    sm:
-                                        3
-                                },
-
-                            boxShadow:
-                                "0 20px 60px rgba(0,0,0,0.3)",
-
-                            overflow:
-                                "hidden"
-                        }}
+                        className={
+                            styles.chatRoom
+                        }
                     >
 
                         <Box
-                            sx={{
-                                display:
-                                    "flex",
-
-                                alignItems:
-                                    "center",
-
-                                justifyContent:
-                                    "space-between",
-
-                                px:
-                                    2,
-
-                                py:
-                                    1.5,
-
-                                borderBottom:
-                                    "1px solid #eaecf0"
-                            }}
+                            className={
+                                styles.chatContainer
+                            }
                         >
 
-                            <Typography
+                            <Box
                                 sx={{
-                                    fontWeight:
-                                        800
-                                }}
-                            >
-                                Meeting chat
-                            </Typography>
+                                    display:
+                                        "flex",
 
+                                    alignItems:
+                                        "center",
 
-                            <IconButton
-                                onClick={
-                                    toggleChat
-                                }
-                            >
-                                <CloseIcon />
-                            </IconButton>
+                                    justifyContent:
+                                        "space-between",
 
-                        </Box>
-
-
-                        <Box
-                            sx={{
-                                flex:
-                                    1,
-
-                                overflowY:
-                                    "auto",
-
-                                p:
-                                    2
-                            }}
-                        >
-
-                            {messages.length === 0 ? (
-
-                                <Box
-                                    sx={{
-                                        height:
-                                            "100%",
-
-                                        display:
-                                            "flex",
-
-                                        flexDirection:
-                                            "column",
-
-                                        alignItems:
-                                            "center",
-
-                                        justifyContent:
-                                            "center",
-
-                                        textAlign:
-                                            "center",
-
-                                        color:
-                                            "#98a2b3"
-                                    }}
-                                >
-
-                                    <ChatIcon
-                                        sx={{
-                                            fontSize:
-                                                42,
-
-                                            mb:
-                                                1,
-
-                                            opacity:
-                                                0.5
-                                        }}
-                                    />
-
-
-                                    <Typography
-                                        sx={{
-                                            fontWeight:
-                                                700,
-
-                                            mb:
-                                                0.5
-                                        }}
-                                    >
-                                        No messages yet
-                                    </Typography>
-
-
-                                    <Typography
-                                        sx={{
-                                            fontSize:
-                                                "0.85rem"
-                                        }}
-                                    >
-                                        Start the conversation.
-                                    </Typography>
-
-                                </Box>
-
-                            ) : (
-
-                                messages.map(
-                                    (
-                                        chatMessage,
-                                        index
-                                    ) => (
-
-                                        <Box
-                                            key={
-                                                index
-                                            }
-                                            sx={{
-                                                mb:
-                                                    2
-                                            }}
-                                        >
-
-                                            <Box
-                                                sx={{
-                                                    display:
-                                                        "flex",
-
-                                                    justifyContent:
-                                                        "space-between",
-
-                                                    gap:
-                                                        1,
-
-                                                    mb:
-                                                        0.4
-                                                }}
-                                            >
-
-                                                <Typography
-                                                    sx={{
-                                                        fontSize:
-                                                            "0.8rem",
-
-                                                        fontWeight:
-                                                            700,
-
-                                                        color:
-                                                            "#344054"
-                                                    }}
-                                                >
-                                                    {
-                                                        chatMessage.sender
-                                                    }
-                                                </Typography>
-
-
-                                                <Typography
-                                                    sx={{
-                                                        fontSize:
-                                                            "0.7rem",
-
-                                                        color:
-                                                            "#98a2b3"
-                                                    }}
-                                                >
-                                                    {
-                                                        chatMessage.time
-                                                    }
-                                                </Typography>
-
-                                            </Box>
-
-
-                                            <Box
-                                                sx={{
-                                                    background:
-                                                        "#f2f4f7",
-
-                                                    borderRadius:
-                                                        "4px 12px 12px 12px",
-
-                                                    p:
-                                                        1.2
-                                                }}
-                                            >
-
-                                                <Typography
-                                                    sx={{
-                                                        fontSize:
-                                                            "0.9rem",
-
-                                                        color:
-                                                            "#1d2939",
-
-                                                        wordBreak:
-                                                            "break-word"
-                                                    }}
-                                                >
-                                                    {
-                                                        chatMessage.data
-                                                    }
-                                                </Typography>
-
-                                            </Box>
-
-                                        </Box>
-
-                                    )
-                                )
-
-                            )}
-
-                        </Box>
-
-
-                        <Box
-                            sx={{
-                                p:
-                                    1.5,
-
-                                borderTop:
-                                    "1px solid #eaecf0",
-
-                                display:
-                                    "flex",
-
-                                gap:
-                                    1
-                            }}
-                        >
-
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={
-                                    message
-                                }
-                                onChange={
-                                    event =>
-                                        setMessage(
-                                            event.target.value
-                                        )
-                                }
-                                onKeyDown={
-                                    event => {
-
-                                        if (
-                                            event.key ===
-                                            "Enter"
-                                        ) {
-
-                                            sendMessage();
-
-                                        }
-
-                                    }
-                                }
-                                placeholder="Type a message..."
-                                sx={{
-                                    "& .MuiOutlinedInput-root":
-                                    {
-                                        borderRadius:
-                                            2
-                                    }
-                                }}
-                            />
-
-
-                            <Button
-                                variant="contained"
-                                onClick={
-                                    sendMessage
-                                }
-                                sx={{
-                                    minWidth:
-                                        76,
-
-                                    borderRadius:
+                                    px:
                                         2,
 
-                                    textTransform:
-                                        "none"
+                                    py:
+                                        1.5,
+
+                                    borderBottom:
+                                        "1px solid #eaecf0"
                                 }}
                             >
-                                Send
-                            </Button>
+
+                                <Typography
+                                    sx={{
+                                        fontWeight:
+                                            800
+                                    }}
+                                >
+                                    Meeting chat
+                                </Typography>
+
+
+                                <IconButton
+                                    onClick={
+                                        toggleChat
+                                    }
+                                >
+                                    <CloseIcon />
+                                </IconButton>
+
+                            </Box>
+
+
+                            <Box
+                                className={
+                                    styles.chattingDisplay
+                                }
+                            >
+
+                                {messages.length === 0 ? (
+
+                                    <Box
+                                        sx={{
+                                            height:
+                                                "100%",
+
+                                            display:
+                                                "flex",
+
+                                            flexDirection:
+                                                "column",
+
+                                            alignItems:
+                                                "center",
+
+                                            justifyContent:
+                                                "center",
+
+                                            textAlign:
+                                                "center",
+
+                                            color:
+                                                "#98a2b3"
+                                        }}
+                                    >
+
+                                        <ChatIcon
+                                            sx={{
+                                                fontSize:
+                                                    42,
+
+                                                mb:
+                                                    1,
+
+                                                opacity:
+                                                    0.5
+                                            }}
+                                        />
+
+
+                                        <Typography
+                                            sx={{
+                                                fontWeight:
+                                                    700,
+
+                                                mb:
+                                                    0.5
+                                            }}
+                                        >
+                                            No messages yet
+                                        </Typography>
+
+
+                                        <Typography
+                                            sx={{
+                                                fontSize:
+                                                    "0.85rem"
+                                            }}
+                                        >
+                                            Start the conversation.
+                                        </Typography>
+
+                                    </Box>
+
+                                ) : (
+
+                                    messages.map(
+                                        (
+                                            chatMessage,
+                                            index
+                                        ) => (
+
+                                            <Box
+                                                key={
+                                                    index
+                                                }
+                                                sx={{
+                                                    mb:
+                                                        2
+                                                }}
+                                            >
+
+                                                <Box
+                                                    sx={{
+                                                        display:
+                                                            "flex",
+
+                                                        justifyContent:
+                                                            "space-between",
+
+                                                        gap:
+                                                            1,
+
+                                                        mb:
+                                                            0.4
+                                                    }}
+                                                >
+
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize:
+                                                                "0.8rem",
+
+                                                            fontWeight:
+                                                                700,
+
+                                                            color:
+                                                                "#344054"
+                                                        }}
+                                                    >
+                                                        {
+                                                            chatMessage.sender
+                                                        }
+                                                    </Typography>
+
+
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize:
+                                                                "0.7rem",
+
+                                                            color:
+                                                                "#98a2b3"
+                                                        }}
+                                                    >
+                                                        {
+                                                            chatMessage.time
+                                                        }
+                                                    </Typography>
+
+                                                </Box>
+
+
+                                                <Box
+                                                    sx={{
+                                                        background:
+                                                            "#f2f4f7",
+
+                                                        borderRadius:
+                                                            "4px 12px 12px 12px",
+
+                                                        p:
+                                                            1.2
+                                                    }}
+                                                >
+
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize:
+                                                                "0.9rem",
+
+                                                            color:
+                                                                "#1d2939",
+
+                                                            wordBreak:
+                                                                "break-word"
+                                                        }}
+                                                    >
+                                                        {
+                                                            chatMessage.data
+                                                        }
+                                                    </Typography>
+
+                                                </Box>
+
+                                            </Box>
+
+                                        )
+                                    )
+
+                                )}
+
+                            </Box>
+
+
+                            <Box
+                                className={
+                                    styles.chattingArea
+                                }
+                            >
+
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        message
+                                    }
+                                    onChange={
+                                        event =>
+                                            setMessage(
+                                                event.target.value
+                                            )
+                                    }
+                                    onKeyDown={
+                                        event => {
+
+                                            if (
+                                                event.key ===
+                                                "Enter"
+                                            ) {
+
+                                                sendMessage();
+
+                                            }
+
+                                        }
+                                    }
+                                    placeholder="Type a message..."
+                                />
+
+
+                                <Button
+                                    variant="contained"
+                                    onClick={
+                                        sendMessage
+                                    }
+                                    sx={{
+                                        minWidth:
+                                            76,
+
+                                        borderRadius:
+                                            2,
+
+                                        textTransform:
+                                            "none"
+                                    }}
+                                >
+                                    Send
+                                </Button>
+
+                            </Box>
 
                         </Box>
 
@@ -3872,7 +4082,9 @@ export default function VideoMeetComponent() {
                 )}
 
 
-                {/* Participants panel */}
+                {/* =================================================
+                    PARTICIPANTS
+                ================================================== */}
 
                 {showParticipants && (
 
@@ -3924,7 +4136,7 @@ export default function VideoMeetComponent() {
                                 "#111827",
 
                             zIndex:
-                                20,
+                                30,
 
                             borderRadius:
                                 {
@@ -4058,6 +4270,7 @@ export default function VideoMeetComponent() {
 
 
                                 <Box>
+
                                     <Typography
                                         sx={{
                                             fontWeight:
@@ -4071,6 +4284,7 @@ export default function VideoMeetComponent() {
                                             "You"}
                                     </Typography>
 
+
                                     <Typography
                                         sx={{
                                             color:
@@ -4082,6 +4296,7 @@ export default function VideoMeetComponent() {
                                     >
                                         You
                                     </Typography>
+
                                 </Box>
 
                             </Box>
@@ -4183,377 +4398,194 @@ export default function VideoMeetComponent() {
             </Box>
 
 
-            {/* Bottom controls */}
+            {/* =====================================================
+                CONTROL BAR
+            ====================================================== */}
 
             <Box
-                sx={{
-                    minHeight:
-                        {
-                            xs:
-                                72,
-
-                            sm:
-                                82
-                        },
-
-                    display:
-                        "flex",
-
-                    alignItems:
-                        "center",
-
-                    justifyContent:
-                        "center",
-
-                    px:
-                        {
-                            xs:
-                                1,
-
-                            sm:
-                                2
-                        },
-
-                    background:
-                        "#111722",
-
-                    borderTop:
-                        "1px solid rgba(255,255,255,0.07)"
-                }}
+                className={
+                    styles.buttonContainers
+                }
             >
 
-                <Box
+                <IconButton
+                    onClick={
+                        handleAudio
+                    }
                     sx={{
-                        display:
-                            "flex",
+                        color:
+                            "#fff",
 
-                        alignItems:
-                            "center",
+                        background:
+                            audio
+                                ? "#202938"
+                                : "#ef4444",
 
-                        justifyContent:
-                            "center",
-
-                        gap:
-                            {
-                                xs:
-                                    0.5,
-
-                                sm:
-                                    1
-                            },
-
-                        maxWidth:
-                            "100%"
+                        "&:hover":
+                        {
+                            background:
+                                audio
+                                    ? "#2a3445"
+                                    : "#dc2626"
+                        }
                     }}
                 >
 
-                    {/* Mic */}
-
-                    <IconButton
-                        onClick={
-                            handleAudio
-                        }
-                        sx={{
-                            width:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            height:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            color:
-                                "#fff",
-
-                            background:
-                                audio
-                                    ? "#202938"
-                                    : "#ef4444",
-
-                            "&:hover":
-                            {
-                                background:
-                                    audio
-                                        ? "#2a3445"
-                                        : "#dc2626"
-                            }
-                        }}
-                    >
-
-                        {audio ? (
-                            <MicIcon />
-                        ) : (
-                            <MicOffIcon />
-                        )}
-
-                    </IconButton>
-
-
-                    {/* Camera */}
-
-                    <IconButton
-                        onClick={
-                            handleVideo
-                        }
-                        sx={{
-                            width:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            height:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            color:
-                                "#fff",
-
-                            background:
-                                video
-                                    ? "#202938"
-                                    : "#ef4444",
-
-                            "&:hover":
-                            {
-                                background:
-                                    video
-                                        ? "#2a3445"
-                                        : "#dc2626"
-                            }
-                        }}
-                    >
-
-                        {video ? (
-                            <VideocamIcon />
-                        ) : (
-                            <VideocamOffIcon />
-                        )}
-
-                    </IconButton>
-
-
-                    {/* Screen share */}
-
-                    {screenAvailable && (
-
-                        <IconButton
-                            onClick={
-                                handleScreen
-                            }
-                            sx={{
-                                width:
-                                    {
-                                        xs:
-                                            46,
-
-                                        sm:
-                                            52
-                                    },
-
-                                height:
-                                    {
-                                        xs:
-                                            46,
-
-                                        sm:
-                                            52
-                                    },
-
-                                color:
-                                    "#fff",
-
-                                background:
-                                    screen
-                                        ? "#1976d2"
-                                        : "#202938",
-
-                                "&:hover":
-                                {
-                                    background:
-                                        screen
-                                            ? "#1565c0"
-                                            : "#2a3445"
-                                }
-                            }}
-                        >
-
-                            {screen ? (
-                                <StopScreenShareIcon />
-                            ) : (
-                                <ScreenShareIcon />
-                            )}
-
-                        </IconButton>
-
+                    {audio ? (
+                        <MicIcon />
+                    ) : (
+                        <MicOffIcon />
                     )}
 
+                </IconButton>
 
-                    {/* Chat */}
 
-                    <Badge
-                        badgeContent={
-                            unreadMessages
+                <IconButton
+                    onClick={
+                        handleVideo
+                    }
+                    sx={{
+                        color:
+                            "#fff",
+
+                        background:
+                            video
+                                ? "#202938"
+                                : "#ef4444",
+
+                        "&:hover":
+                        {
+                            background:
+                                video
+                                    ? "#2a3445"
+                                    : "#dc2626"
                         }
-                        color="error"
-                        max={99}
-                    >
+                    }}
+                >
 
-                        <IconButton
-                            onClick={
-                                toggleChat
-                            }
-                            sx={{
-                                width:
-                                    {
-                                        xs:
-                                            46,
+                    {video ? (
+                        <VideocamIcon />
+                    ) : (
+                        <VideocamOffIcon />
+                    )}
 
-                                        sm:
-                                            52
-                                    },
-
-                                height:
-                                    {
-                                        xs:
-                                            46,
-
-                                        sm:
-                                            52
-                                    },
-
-                                color:
-                                    "#fff",
-
-                                background:
-                                    showChat
-                                        ? "#1976d2"
-                                        : "#202938",
-
-                                "&:hover":
-                                {
-                                    background:
-                                        showChat
-                                            ? "#1565c0"
-                                            : "#2a3445"
-                                }
-                            }}
-                        >
-                            <ChatIcon />
-                        </IconButton>
-
-                    </Badge>
+                </IconButton>
 
 
-                    {/* Participants */}
+                {screenAvailable && (
 
                     <IconButton
                         onClick={
-                            toggleParticipants
+                            handleScreen
                         }
                         sx={{
-                            width:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            height:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
                             color:
                                 "#fff",
 
                             background:
-                                showParticipants
+                                screen
                                     ? "#1976d2"
                                     : "#202938",
 
                             "&:hover":
                             {
                                 background:
-                                    showParticipants
+                                    screen
                                         ? "#1565c0"
                                         : "#2a3445"
                             }
                         }}
                     >
-                        <PeopleIcon />
+
+                        {screen ? (
+                            <StopScreenShareIcon />
+                        ) : (
+                            <ScreenShareIcon />
+                        )}
+
                     </IconButton>
 
+                )}
 
-                    {/* End call */}
+
+                <Badge
+                    badgeContent={
+                        unreadMessages
+                    }
+                    color="error"
+                    max={99}
+                >
 
                     <IconButton
                         onClick={
-                            handleEndCall
+                            toggleChat
                         }
                         sx={{
-                            width:
-                                {
-                                    xs:
-                                        54,
-
-                                    sm:
-                                        60
-                                },
-
-                            height:
-                                {
-                                    xs:
-                                        46,
-
-                                    sm:
-                                        52
-                                },
-
-                            borderRadius:
-                                3,
-
                             color:
                                 "#fff",
 
                             background:
-                                "#dc2626",
-
-                            "&:hover":
-                            {
-                                background:
-                                    "#b91c1c"
-                            }
+                                showChat
+                                    ? "#1976d2"
+                                    : "#202938"
                         }}
                     >
-                        <CallEndIcon />
+
+                        <ChatIcon />
+
                     </IconButton>
 
-                </Box>
+                </Badge>
+
+
+                <IconButton
+                    onClick={
+                        toggleParticipants
+                    }
+                    sx={{
+                        color:
+                            "#fff",
+
+                        background:
+                            showParticipants
+                                ? "#1976d2"
+                                : "#202938"
+                    }}
+                >
+
+                    <PeopleIcon />
+
+                </IconButton>
+
+
+                <IconButton
+                    onClick={
+                        handleEndCall
+                    }
+                    sx={{
+                        color:
+                            "#fff",
+
+                        background:
+                            "#dc2626",
+
+                        width:
+                            58,
+
+                        borderRadius:
+                            3,
+
+                        "&:hover":
+                        {
+                            background:
+                                "#b91c1c"
+                        }
+                    }}
+                >
+
+                    <CallEndIcon />
+
+                </IconButton>
 
             </Box>
 

@@ -178,12 +178,6 @@ const googleLogin = async (
 
     try {
 
-        /*
-        --------------------------------------------------------------
-        Verify Google ID token
-        --------------------------------------------------------------
-        */
-
         const ticket =
             await googleClient.verifyIdToken({
 
@@ -213,12 +207,6 @@ const googleLogin = async (
 
         }
 
-
-        /*
-        --------------------------------------------------------------
-        Google account information
-        --------------------------------------------------------------
-        */
 
         const googleId =
             payload.sub;
@@ -259,12 +247,6 @@ const googleLogin = async (
         }
 
 
-        /*
-        --------------------------------------------------------------
-        Verify Google email
-        --------------------------------------------------------------
-        */
-
         if (!emailVerified) {
 
             return res.status(
@@ -285,12 +267,6 @@ const googleLogin = async (
                 .trim();
 
 
-        /*
-        --------------------------------------------------------------
-        Find existing user by Google ID
-        --------------------------------------------------------------
-        */
-
         let user =
             await User.findOne({
 
@@ -299,12 +275,6 @@ const googleLogin = async (
 
             });
 
-
-        /*
-        --------------------------------------------------------------
-        Fallback: find by email
-        --------------------------------------------------------------
-        */
 
         if (!user) {
 
@@ -382,7 +352,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        New Google user
+        New user
         --------------------------------------------------------------
         */
 
@@ -460,12 +430,6 @@ const googleLogin = async (
         }
 
 
-        /*
-        --------------------------------------------------------------
-        Create new user
-        --------------------------------------------------------------
-        */
-
         user =
             new User({
 
@@ -489,12 +453,6 @@ const googleLogin = async (
 
         await user.save();
 
-
-        /*
-        --------------------------------------------------------------
-        Create session
-        --------------------------------------------------------------
-        */
 
         const token =
             await createSession(
@@ -585,12 +543,6 @@ const createMeeting = async (
 
     try {
 
-        /*
-        --------------------------------------------------------------
-        Validate user session
-        --------------------------------------------------------------
-        */
-
         const user =
             await User.findOne({
 
@@ -660,7 +612,7 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Create actual meeting
+        Create meeting
         --------------------------------------------------------------
         */
 
@@ -681,7 +633,7 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Save creator history
+        Creator history
         --------------------------------------------------------------
         */
 
@@ -1042,7 +994,7 @@ const getUserHistory = async (
 
 /*
 |--------------------------------------------------------------------------
-| Add Meeting To User History
+| Add Meeting To History
 |--------------------------------------------------------------------------
 */
 
@@ -1053,8 +1005,7 @@ const addToHistory = async (
 
     const {
         token,
-        meeting_code,
-        action = "joined"
+        meeting_code
     } = req.body;
 
 
@@ -1081,27 +1032,6 @@ const addToHistory = async (
 
             message:
                 "Token and meeting code are required"
-
-        });
-
-    }
-
-
-    if (
-        ![
-            "created",
-            "joined"
-        ].includes(
-            action
-        )
-    ) {
-
-        return res.status(
-            httpStatus.BAD_REQUEST
-        ).json({
-
-            message:
-                "Invalid history action"
 
         });
 
@@ -1175,6 +1105,23 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
+        Backend decides action
+        --------------------------------------------------------------
+
+        Creator → created
+        Everyone else → joined
+        --------------------------------------------------------------
+        */
+
+        const action =
+            meeting.createdBy ===
+            user.username
+                ? "created"
+                : "joined";
+
+
+        /*
+        --------------------------------------------------------------
         Prevent duplicate history
         --------------------------------------------------------------
         */
@@ -1186,10 +1133,7 @@ const addToHistory = async (
                     user.username,
 
                 meeting:
-                    meeting._id,
-
-                action:
-                    action
+                    meeting._id
 
             });
 
@@ -1209,7 +1153,7 @@ const addToHistory = async (
                     meeting.meetingCode,
 
                 action:
-                    action
+                    existingHistory.action
 
             });
 
@@ -1218,29 +1162,25 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
-        Create history record with meeting reference
+        Create history record
         --------------------------------------------------------------
         */
 
-        const historyEntry =
-            new MeetingHistory({
+        await MeetingHistory.create({
 
-                user_id:
-                    user.username,
+            user_id:
+                user.username,
 
-                meeting:
-                    meeting._id,
+            meeting:
+                meeting._id,
 
-                meetingCode:
-                    meeting.meetingCode,
+            meetingCode:
+                meeting.meetingCode,
 
-                action:
-                    action
+            action:
+                action
 
-            });
-
-
-        await historyEntry.save();
+        });
 
 
         return res.status(

@@ -78,7 +78,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Fetch History
+    | Fetch history
     |--------------------------------------------------------------------------
     */
 
@@ -128,6 +128,7 @@ function History() {
                     ) {
 
                         setError(
+                            historyError.response?.data?.message ||
                             "Unable to load your meeting history."
                         );
 
@@ -157,12 +158,12 @@ function History() {
 
         };
 
-    }, []);
+    }, [getHistoryOfUser]);
 
 
     /*
     |--------------------------------------------------------------------------
-    | Format Date
+    | Format date
     |--------------------------------------------------------------------------
     */
 
@@ -216,7 +217,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Format Time
+    | Format time
     |--------------------------------------------------------------------------
     */
 
@@ -267,7 +268,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Day Label
+    | Day label
     |--------------------------------------------------------------------------
     */
 
@@ -311,24 +312,18 @@ function History() {
                 ) => {
 
                     return (
-                        firstDate
-                            .getFullYear() ===
-                        secondDate
-                            .getFullYear()
+                        firstDate.getFullYear() ===
+                            secondDate.getFullYear()
 
                         &&
 
-                        firstDate
-                            .getMonth() ===
-                        secondDate
-                            .getMonth()
+                        firstDate.getMonth() ===
+                            secondDate.getMonth()
 
                         &&
 
-                        firstDate
-                            .getDate() ===
-                        secondDate
-                            .getDate()
+                        firstDate.getDate() ===
+                            secondDate.getDate()
                     );
 
                 };
@@ -367,7 +362,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Sort History
+    | Sort
     |--------------------------------------------------------------------------
     */
 
@@ -454,7 +449,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Copy Meeting Code
+    | Copy
     |--------------------------------------------------------------------------
     */
 
@@ -474,11 +469,9 @@ function History() {
 
             try {
 
-                await navigator
-                    .clipboard
-                    .writeText(
-                        code
-                    );
+                await navigator.clipboard.writeText(
+                    code
+                );
 
 
                 setCopiedCode(
@@ -490,17 +483,6 @@ function History() {
                     true
                 );
 
-
-                setTimeout(
-                    () => {
-
-                        setCopiedCode(
-                            ""
-                        );
-
-                    },
-                    1800
-                );
 
             } catch (
                 copyError
@@ -518,7 +500,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Join Meeting
+    | Join
     |--------------------------------------------------------------------------
     */
 
@@ -538,6 +520,22 @@ function History() {
 
             navigate(
                 `/meeting/${code}`
+            );
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Close Snackbar
+    |--------------------------------------------------------------------------
+    */
+
+    const handleSnackbarClose =
+        () => {
+
+            setSnackbarOpen(
+                false
             );
 
         };
@@ -570,8 +568,8 @@ function History() {
                     zIndex:
                         10,
 
-                    backgroundColor:
-                        "rgba(255,255,255,0.92)",
+                    background:
+                        "rgba(255,255,255,0.94)",
 
                     backdropFilter:
                         "blur(12px)",
@@ -614,7 +612,6 @@ function History() {
                                     "/home"
                                 )
                             }
-                            aria-label="Back to home"
                         >
                             <ArrowBackRounded />
                         </IconButton>
@@ -663,11 +660,11 @@ function History() {
                                                 "block"
                                         },
 
-                                    fontSize:
-                                        "0.78rem",
-
                                     color:
-                                        "#667085"
+                                        "#667085",
+
+                                    fontSize:
+                                        "0.78rem"
                                 }}
                             >
                                 Your created and joined meetings.
@@ -677,10 +674,10 @@ function History() {
 
 
                         <Button
-                            variant="outlined"
                             startIcon={
                                 <HomeRounded />
                             }
+                            variant="outlined"
                             onClick={() =>
                                 navigate(
                                     "/home"
@@ -737,7 +734,7 @@ function History() {
                 }}
             >
 
-                {/* Header */}
+                {/* Title */}
 
                 <Box
                     sx={{
@@ -883,10 +880,7 @@ function History() {
                                 "none",
 
                             fontWeight:
-                                700,
-
-                            px:
-                                2
+                                700
                         }}
                     >
                         New Meeting
@@ -896,7 +890,7 @@ function History() {
 
 
                 {/* =================================================
-                    STAT CARDS
+                    STATISTICS
                 ================================================== */}
 
                 <Box
@@ -910,7 +904,7 @@ function History() {
                                     "1fr 1fr",
 
                                 sm:
-                                    "1fr 1fr 1fr"
+                                    "repeat(3,1fr)"
                             },
 
                         gap:
@@ -924,7 +918,7 @@ function History() {
                     <Box
                         sx={{
                             background:
-                                "#ffffff",
+                                "#fff",
 
                             border:
                                 "1px solid rgba(0,0,0,0.06)",
@@ -939,11 +933,11 @@ function History() {
 
                         <Typography
                             sx={{
-                                fontSize:
-                                    "0.75rem",
-
                                 color:
                                     "#667085",
+
+                                fontSize:
+                                    "0.75rem",
 
                                 mb:
                                     0.5
@@ -974,7 +968,7 @@ function History() {
                     <Box
                         sx={{
                             background:
-                                "#ffffff",
+                                "#fff",
 
                             border:
                                 "1px solid rgba(0,0,0,0.06)",
@@ -989,11 +983,11 @@ function History() {
 
                         <Typography
                             sx={{
-                                fontSize:
-                                    "0.75rem",
-
                                 color:
                                     "#667085",
+
+                                fontSize:
+                                    "0.75rem",
 
                                 mb:
                                     0.5
@@ -1033,7 +1027,7 @@ function History() {
                                 },
 
                             background:
-                                "#ffffff",
+                                "#fff",
 
                             border:
                                 "1px solid rgba(0,0,0,0.06)",
@@ -1048,11 +1042,11 @@ function History() {
 
                         <Typography
                             sx={{
-                                fontSize:
-                                    "0.75rem",
-
                                 color:
                                     "#667085",
+
+                                fontSize:
+                                    "0.75rem",
 
                                 mb:
                                     0.5
@@ -1081,6 +1075,8 @@ function History() {
 
                 </Box>
 
+
+                {/* Error */}
 
                 {error && (
 
@@ -1114,6 +1110,9 @@ function History() {
                             display:
                                 "flex",
 
+                            flexDirection:
+                                "column",
+
                             alignItems:
                                 "center",
 
@@ -1122,23 +1121,20 @@ function History() {
                         }}
                     >
 
-                        <Stack
-                            alignItems="center"
-                            spacing={2}
+                        <CircularProgress />
+
+
+                        <Typography
+                            sx={{
+                                mt:
+                                    2,
+
+                                color:
+                                    "#667085"
+                            }}
                         >
-
-                            <CircularProgress />
-
-                            <Typography
-                                sx={{
-                                    color:
-                                        "#667085"
-                                }}
-                            >
-                                Loading your meetings...
-                            </Typography>
-
-                        </Stack>
+                            Loading your meetings...
+                        </Typography>
 
                     </Box>
 
@@ -1313,27 +1309,30 @@ function History() {
                     sortedMeetings.length > 0 && (
 
                         <Stack
-                            spacing={1.8}
+                            spacing:
+                                1.8
                         >
 
                             {sortedMeetings.map(
                                 (
-                                    meeting,
+                                    historyItem,
                                     index
                                 ) => {
 
-                                    const code =
-                                        meeting?.meetingCode ||
+                                    const meetingCode =
+                                        historyItem?.meetingCode ||
+                                        historyItem?.meeting?.meetingCode ||
                                         "Unknown";
 
 
-                                    const date =
-                                        meeting?.date;
-
-
                                     const action =
-                                        meeting?.action ||
+                                        historyItem?.action ||
                                         "joined";
+
+
+                                    const date =
+                                        historyItem?.date ||
+                                        historyItem?.meeting?.createdAt;
 
 
                                     const isCreated =
@@ -1341,36 +1340,51 @@ function History() {
                                         "created";
 
 
+                                    const previousDate =
+                                        sortedMeetings[
+                                            index -
+                                            1
+                                        ]?.date;
+
+
+                                    const currentDay =
+                                        getDayLabel(
+                                            date
+                                        );
+
+
+                                    const previousDay =
+                                        getDayLabel(
+                                            previousDate
+                                        );
+
+
                                     return (
 
                                         <React.Fragment
                                             key={
-                                                meeting?._id ||
-                                                `${code}-${date}-${index}`
+                                                historyItem?._id ||
+                                                `${meetingCode}-${date}-${index}`
                                             }
                                         >
 
-                                            {/* Day heading */}
+                                            {/* Day header */}
 
                                             {(
-                                                index === 0 ||
+                                                index ===
+                                                    0 ||
 
-                                                getDayLabel(
-                                                    date
-                                                ) !==
-                                                getDayLabel(
-                                                    sortedMeetings[
-                                                        index - 1
-                                                    ]?.date
-                                                )
+                                                currentDay !==
+                                                    previousDay
                                             ) && (
 
                                                 <Box
                                                     sx={{
                                                         pt:
-                                                            index === 0
+                                                            index ===
+                                                            0
                                                                 ? 0
-                                                                : 1.5
+                                                                : 1.2
                                                     }}
                                                 >
 
@@ -1393,9 +1407,7 @@ function History() {
                                                         }}
                                                     >
                                                         {
-                                                            getDayLabel(
-                                                                date
-                                                            )
+                                                            currentDay
                                                         }
                                                     </Typography>
 
@@ -1417,7 +1429,7 @@ function History() {
                                                         "#fff",
 
                                                     transition:
-                                                        "transform 0.2s ease, box-shadow 0.2s ease",
+                                                        "transform .2s ease, box-shadow .2s ease",
 
                                                     "&:hover":
                                                     {
@@ -1486,7 +1498,7 @@ function History() {
                                                         }}
                                                     >
 
-                                                        {/* Meeting info */}
+                                                        {/* Information */}
 
                                                         <Box
                                                             sx={{
@@ -1559,56 +1571,53 @@ function History() {
                                                                 >
 
                                                                     {isCreated ? (
+
                                                                         <AddRounded
                                                                             sx={{
                                                                                 fontSize:
                                                                                     21
                                                                             }}
                                                                         />
+
                                                                     ) : (
+
                                                                         <VideoCallRounded
                                                                             sx={{
                                                                                 fontSize:
                                                                                     21
                                                                             }}
                                                                         />
+
                                                                     )}
 
                                                                 </Box>
 
 
-                                                                <Box
+                                                                <Typography
                                                                     sx={{
-                                                                        minWidth:
-                                                                            0
+                                                                        fontWeight:
+                                                                            750,
+
+                                                                        fontSize:
+                                                                            "1rem",
+
+                                                                        color:
+                                                                            "#171b2d",
+
+                                                                        overflow:
+                                                                            "hidden",
+
+                                                                        textOverflow:
+                                                                            "ellipsis",
+
+                                                                        whiteSpace:
+                                                                            "nowrap"
                                                                     }}
                                                                 >
-
-                                                                    <Typography
-                                                                        sx={{
-                                                                            fontWeight:
-                                                                                750,
-
-                                                                            fontSize:
-                                                                                "1rem",
-
-                                                                            color:
-                                                                                "#171b2d",
-
-                                                                            overflow:
-                                                                                "hidden",
-
-                                                                            textOverflow:
-                                                                                "ellipsis",
-
-                                                                            whiteSpace:
-                                                                                "nowrap"
-                                                                        }}
-                                                                    >
-                                                                        {code}
-                                                                    </Typography>
-
-                                                                </Box>
+                                                                    {
+                                                                        meetingCode
+                                                                    }
+                                                                </Typography>
 
                                                             </Box>
 
@@ -1721,19 +1730,19 @@ function History() {
                                                             <IconButton
                                                                 onClick={() =>
                                                                     copyMeetingCode(
-                                                                        code
+                                                                        meetingCode
                                                                     )
                                                                 }
-                                                                aria-label="Copy meeting code"
+                                                                disabled={
+                                                                    meetingCode ===
+                                                                    "Unknown"
+                                                                }
                                                                 sx={{
                                                                     border:
                                                                         "1px solid #d0d5dd",
 
                                                                     borderRadius:
-                                                                        2,
-
-                                                                    color:
-                                                                        "#344054"
+                                                                        2
                                                                 }}
                                                             >
 
@@ -1754,8 +1763,12 @@ function History() {
                                                                 }
                                                                 onClick={() =>
                                                                     joinMeeting(
-                                                                        code
+                                                                        meetingCode
                                                                     )
+                                                                }
+                                                                disabled={
+                                                                    meetingCode ===
+                                                                    "Unknown"
                                                                 }
                                                                 sx={{
                                                                     flex:
@@ -1861,7 +1874,7 @@ function History() {
 
 
             {/* =====================================================
-                COPY NOTIFICATION
+                SNACKBAR
             ====================================================== */}
 
             <Snackbar
@@ -1871,20 +1884,16 @@ function History() {
                 autoHideDuration={
                     2200
                 }
-                onClose={() =>
-                    setSnackbarOpen(
-                        false
-                    )
+                onClose={
+                    handleSnackbarClose
                 }
             >
 
                 <Alert
                     severity="success"
                     variant="filled"
-                    onClose={() =>
-                        setSnackbarOpen(
-                            false
-                        )
+                    onClose={
+                        handleSnackbarClose
                     }
                 >
                     {copiedCode

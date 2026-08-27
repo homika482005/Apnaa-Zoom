@@ -62,7 +62,7 @@ function App() {
 
 
                         <Route
-                            path="/:url"
+                            path="/meeting/:url"
                             element={
                                 <VideoMeetComponent />
                             }

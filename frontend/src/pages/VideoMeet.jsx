@@ -48,7 +48,8 @@ import server from "../environment";
 import styles from "../styles/videoComponent.module.css";
 
 
-const serverUrl = server;
+const serverUrl =
+    server;
 
 
 const peerConfigConnections = {
@@ -105,6 +106,10 @@ export default function VideoMeetComponent() {
 
     const connectionsRef =
         useRef({});
+
+
+    const previewStartingRef =
+        useRef(false);
 
 
     /*
@@ -222,7 +227,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Check
+    | Authentication
     |--------------------------------------------------------------------------
     */
 
@@ -246,7 +251,8 @@ export default function VideoMeetComponent() {
 
     useEffect(() => {
 
-        let active = true;
+        let active =
+            true;
 
 
         const validateMeeting =
@@ -296,7 +302,8 @@ export default function VideoMeetComponent() {
                         );
 
 
-                    let data = {};
+                    let data =
+                        {};
 
 
                     try {
@@ -309,7 +316,7 @@ export default function VideoMeetComponent() {
                     ) {
 
                         console.log(
-                            "Meeting validation response parsing:",
+                            "Meeting response parsing error:",
                             jsonError
                         );
 
@@ -329,7 +336,8 @@ export default function VideoMeetComponent() {
                     if (active) {
 
                         setMeetingValid(
-                            data.valid === true
+                            data.valid ===
+                            true
                         );
 
 
@@ -387,7 +395,8 @@ export default function VideoMeetComponent() {
 
         return () => {
 
-            active = false;
+            active =
+                false;
 
         };
 
@@ -398,7 +407,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Check Camera / Microphone / Screen
+    | Check Device Support
     |--------------------------------------------------------------------------
     */
 
@@ -421,9 +430,11 @@ export default function VideoMeetComponent() {
                             false
                         );
 
+
                         setScreenAvailable(
                             false
                         );
+
 
                         return;
 
@@ -440,8 +451,10 @@ export default function VideoMeetComponent() {
 
                         const stream =
                             await navigator.mediaDevices.getUserMedia({
+
                                 video:
                                     true
+
                             });
 
 
@@ -462,7 +475,7 @@ export default function VideoMeetComponent() {
                     ) {
 
                         console.log(
-                            "Camera permission:",
+                            "Camera unavailable:",
                             cameraError
                         );
 
@@ -484,8 +497,10 @@ export default function VideoMeetComponent() {
 
                         const stream =
                             await navigator.mediaDevices.getUserMedia({
+
                                 audio:
                                     true
+
                             });
 
 
@@ -506,7 +521,7 @@ export default function VideoMeetComponent() {
                     ) {
 
                         console.log(
-                            "Microphone permission:",
+                            "Microphone unavailable:",
                             microphoneError
                         );
 
@@ -549,268 +564,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Guest Preview
-    |--------------------------------------------------------------------------
-    */
-
-    useEffect(() => {
-
-        if (
-            meetingChecking ||
-            !meetingValid ||
-            !guestLobby
-        ) {
-
-            return;
-
-        }
-
-
-        let active = true;
-
-
-        const startPreview =
-            async () => {
-
-                await getPermissions();
-
-
-                if (!active) {
-
-                    return;
-
-                }
-
-
-                try {
-
-                    if (
-                        !navigator.mediaDevices ||
-                        !navigator.mediaDevices.getUserMedia
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    /*
-                    ----------------------------------------------------------
-                    Request only available devices
-                    ----------------------------------------------------------
-                    */
-
-                    const preview =
-                        await navigator.mediaDevices.getUserMedia({
-
-                            video:
-                                cameraAvailable,
-
-                            audio:
-                                microphoneAvailable
-
-                        });
-
-
-                    window.previewStream =
-                        preview;
-
-
-                    /*
-                    ----------------------------------------------------------
-                    Apply current preview settings
-                    ----------------------------------------------------------
-                    */
-
-                    preview
-                        .getVideoTracks()
-                        .forEach(
-                            track => {
-
-                                track.enabled =
-                                    video;
-
-                            }
-                        );
-
-
-                    preview
-                        .getAudioTracks()
-                        .forEach(
-                            track => {
-
-                                track.enabled =
-                                    audio;
-
-                            }
-                        );
-
-
-                    if (
-                        localVideoRef.current
-                    ) {
-
-                        localVideoRef.current.srcObject =
-                            preview;
-
-                    }
-
-                } catch (
-                    previewError
-                ) {
-
-                    console.log(
-                        "Preview error:",
-                        previewError
-                    );
-
-                }
-
-            };
-
-
-        startPreview();
-
-
-        return () => {
-
-            active = false;
-
-        };
-
-    }, [
-        getPermissions,
-        guestLobby,
-        meetingChecking,
-        meetingValid,
-        cameraAvailable,
-        microphoneAvailable,
-        video,
-        audio
-    ]);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Stop Guest Preview
-    |--------------------------------------------------------------------------
-    */
-
-    const stopPreview =
-        () => {
-
-            try {
-
-                if (
-                    window.previewStream
-                ) {
-
-                    window.previewStream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
-
-
-                    window.previewStream =
-                        null;
-
-                }
-
-            } catch (
-                previewError
-            ) {
-
-                console.log(
-                    "Stop preview error:",
-                    previewError
-                );
-
-            }
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Preview Video Toggle
-    |--------------------------------------------------------------------------
-    */
-
-    const togglePreviewVideo =
-        () => {
-
-            const nextVideo =
-                !video;
-
-
-            setVideo(
-                nextVideo
-            );
-
-
-            if (
-                window.previewStream
-            ) {
-
-                window.previewStream
-                    .getVideoTracks()
-                    .forEach(
-                        track => {
-
-                            track.enabled =
-                                nextVideo;
-
-                        }
-                    );
-
-            }
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Preview Audio Toggle
-    |--------------------------------------------------------------------------
-    */
-
-    const togglePreviewAudio =
-        () => {
-
-            const nextAudio =
-                !audio;
-
-
-            setAudio(
-                nextAudio
-            );
-
-
-            if (
-                window.previewStream
-            ) {
-
-                window.previewStream
-                    .getAudioTracks()
-                    .forEach(
-                        track => {
-
-                            track.enabled =
-                                nextAudio;
-
-                        }
-                    );
-
-            }
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Local Stream
+    | Create Optional Local Stream
     |--------------------------------------------------------------------------
     */
 
@@ -823,6 +577,12 @@ export default function VideoMeetComponent() {
 
                 try {
 
+                    /*
+                    ----------------------------------------------------------
+                    Stop previous local stream
+                    ----------------------------------------------------------
+                    */
+
                     if (
                         window.localStream
                     ) {
@@ -834,6 +594,36 @@ export default function VideoMeetComponent() {
                                     track.stop()
                             );
 
+
+                        window.localStream =
+                            null;
+
+                    }
+
+
+                    if (
+                        localVideoRef.current
+                    ) {
+
+                        localVideoRef.current.srcObject =
+                            null;
+
+                    }
+
+
+                    /*
+                    ----------------------------------------------------------
+                    No media selected
+                    ----------------------------------------------------------
+                    */
+
+                    if (
+                        !includeVideo &&
+                        !includeAudio
+                    ) {
+
+                        return null;
+
                     }
 
 
@@ -843,11 +633,17 @@ export default function VideoMeetComponent() {
                     ) {
 
                         throw new Error(
-                            "Your browser does not support camera and microphone access."
+                            "Your browser does not support media devices."
                         );
 
                     }
 
+
+                    /*
+                    ----------------------------------------------------------
+                    Build constraints
+                    ----------------------------------------------------------
+                    */
 
                     const constraints = {
 
@@ -862,27 +658,165 @@ export default function VideoMeetComponent() {
                     };
 
 
+                    /*
+                    ----------------------------------------------------------
+                    Device unavailable / disabled
+                    ----------------------------------------------------------
+                    */
+
                     if (
                         !constraints.video &&
                         !constraints.audio
                     ) {
 
-                        throw new Error(
-                            "Camera and microphone are unavailable."
-                        );
+                        /*
+                        The user is still allowed to join
+                        without local media.
+                        */
+
+                        return null;
 
                     }
 
 
-                    const stream =
-                        await navigator.mediaDevices.getUserMedia(
-                            constraints
+                    /*
+                    ----------------------------------------------------------
+                    Get requested stream
+                    ----------------------------------------------------------
+                    */
+
+                    let stream;
+
+
+                    try {
+
+                        stream =
+                            await navigator.mediaDevices.getUserMedia(
+                                constraints
+                            );
+
+                    } catch (
+                        mediaError
+                    ) {
+
+                        /*
+                        ------------------------------------------------------
+                        If the requested combination fails, try each
+                        requested device independently.
+                        ------------------------------------------------------
+                        */
+
+                        console.log(
+                            "Combined media request failed:",
+                            mediaError
                         );
+
+
+                        let videoStream =
+                            null;
+
+
+                        let audioStream =
+                            null;
+
+
+                        if (
+                            constraints.video
+                        ) {
+
+                            try {
+
+                                videoStream =
+                                    await navigator.mediaDevices.getUserMedia({
+                                        video:
+                                            true
+                                    });
+
+                            } catch (
+                                videoError
+                            ) {
+
+                                console.log(
+                                    "Video fallback failed:",
+                                    videoError
+                                );
+
+                            }
+
+                        }
+
+
+                        if (
+                            constraints.audio
+                        ) {
+
+                            try {
+
+                                audioStream =
+                                    await navigator.mediaDevices.getUserMedia({
+                                        audio:
+                                            true
+                                    });
+
+                            } catch (
+                                audioError
+                            ) {
+
+                                console.log(
+                                    "Audio fallback failed:",
+                                    audioError
+                                );
+
+                            }
+
+                        }
+
+
+                        const tracks = [
+
+                            ...(
+                                videoStream
+                                    ? videoStream.getVideoTracks()
+                                    : []
+                            ),
+
+                            ...(
+                                audioStream
+                                    ? audioStream.getAudioTracks()
+                                    : []
+                            )
+
+                        ];
+
+
+                        if (
+                            tracks.length ===
+                            0
+                        ) {
+
+                            /*
+                            --------------------------------------------------
+                            No devices available.
+                            Still allow the user to join.
+                            --------------------------------------------------
+                            */
+
+                            return null;
+
+                        }
+
+
+                        stream =
+                            new MediaStream(
+                                tracks
+                            );
+
+                    }
 
 
                     /*
                     ----------------------------------------------------------
-                    Respect current settings
+                    Apply requested ON/OFF state
                     ----------------------------------------------------------
                     */
 
@@ -931,14 +865,28 @@ export default function VideoMeetComponent() {
                 ) {
 
                     console.error(
-                        "Media error:",
+                        "Media creation error:",
                         mediaError
                     );
 
 
-                    setError(
-                        "Camera or microphone access failed. Please check your browser permissions."
-                    );
+                    /*
+                    ----------------------------------------------------------
+                    Important:
+                    Joining the meeting does not depend on camera/mic.
+                    ----------------------------------------------------------
+                    */
+
+                    if (
+                        includeVideo ||
+                        includeAudio
+                    ) {
+
+                        setError(
+                            "Camera or microphone could not be enabled. You can still join with them off."
+                        );
+
+                    }
 
 
                     return null;
@@ -953,6 +901,409 @@ export default function VideoMeetComponent() {
                 microphoneAvailable
             ]
         );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Preview
+    |--------------------------------------------------------------------------
+    */
+
+    useEffect(() => {
+
+        if (
+            meetingChecking ||
+            !meetingValid ||
+            !guestLobby
+        ) {
+
+            return;
+
+        }
+
+
+        let active =
+            true;
+
+
+        const startPreview =
+            async () => {
+
+                if (
+                    previewStartingRef.current
+                ) {
+
+                    return;
+
+                }
+
+
+                previewStartingRef.current =
+                    true;
+
+
+                try {
+
+                    await getPermissions();
+
+
+                    /*
+                    ----------------------------------------------------------
+                    If user disabled both devices, no preview is needed.
+                    ----------------------------------------------------------
+                    */
+
+                    if (
+                        !video &&
+                        !audio
+                    ) {
+
+                        if (
+                            localVideoRef.current
+                        ) {
+
+                            localVideoRef.current.srcObject =
+                                null;
+
+                        }
+
+
+                        return;
+
+                    }
+
+
+                    /*
+                    ----------------------------------------------------------
+                    Try preview with the current settings.
+                    ----------------------------------------------------------
+                    */
+
+                    if (
+                        !navigator.mediaDevices ||
+                        !navigator.mediaDevices.getUserMedia
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    let preview =
+                        null;
+
+
+                    try {
+
+                        preview =
+                            await navigator.mediaDevices.getUserMedia({
+
+                                video:
+                                    cameraAvailable &&
+                                    video,
+
+                                audio:
+                                    microphoneAvailable &&
+                                    audio
+
+                            });
+
+                    } catch (
+                        previewError
+                    ) {
+
+                        console.log(
+                            "Preview request failed:",
+                            previewError
+                        );
+
+
+                        /*
+                        ------------------------------------------------------
+                        Try video only
+                        ------------------------------------------------------
+                        */
+
+                        if (
+                            cameraAvailable &&
+                            video
+                        ) {
+
+                            try {
+
+                                preview =
+                                    await navigator.mediaDevices.getUserMedia({
+                                        video:
+                                            true
+                                    });
+
+                            } catch (
+                                videoError
+                            ) {
+
+                                console.log(
+                                    "Video preview failed:",
+                                    videoError
+                                );
+
+                            }
+
+                        }
+
+
+                        /*
+                        ------------------------------------------------------
+                        Try audio only
+                        ------------------------------------------------------
+                        */
+
+                        if (
+                            !preview &&
+                            microphoneAvailable &&
+                            audio
+                        ) {
+
+                            try {
+
+                                preview =
+                                    await navigator.mediaDevices.getUserMedia({
+                                        audio:
+                                            true
+                                    });
+
+                            } catch (
+                                audioError
+                            ) {
+
+                                console.log(
+                                    "Audio preview failed:",
+                                    audioError
+                                );
+
+                            }
+
+                        }
+
+                    }
+
+
+                    if (
+                        !active
+                    ) {
+
+                        if (preview) {
+
+                            preview
+                                .getTracks()
+                                .forEach(
+                                    track =>
+                                        track.stop()
+                                );
+
+                        }
+
+
+                        return;
+
+                    }
+
+
+                    if (
+                        preview
+                    ) {
+
+                        window.previewStream =
+                            preview;
+
+
+                        preview
+                            .getVideoTracks()
+                            .forEach(
+                                track => {
+
+                                    track.enabled =
+                                        video;
+
+                                }
+                            );
+
+
+                        preview
+                            .getAudioTracks()
+                            .forEach(
+                                track => {
+
+                                    track.enabled =
+                                        audio;
+
+                                }
+                            );
+
+
+                        if (
+                            localVideoRef.current
+                        ) {
+
+                            localVideoRef.current.srcObject =
+                                preview;
+
+                        }
+
+                    }
+
+                } catch (
+                    previewError
+                ) {
+
+                    console.log(
+                        "Preview error:",
+                        previewError
+                    );
+
+                } finally {
+
+                    previewStartingRef.current =
+                        false;
+
+                }
+
+            };
+
+
+        startPreview();
+
+
+        return () => {
+
+            active =
+                false;
+
+        };
+
+    }, [
+        meetingChecking,
+        meetingValid,
+        guestLobby,
+        getPermissions
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stop Preview
+    |--------------------------------------------------------------------------
+    */
+
+    const stopPreview =
+        () => {
+
+            try {
+
+                if (
+                    window.previewStream
+                ) {
+
+                    window.previewStream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
+
+
+                    window.previewStream =
+                        null;
+
+                }
+
+            } catch (
+                previewError
+            ) {
+
+                console.log(
+                    "Stop preview error:",
+                    previewError
+                );
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Preview Audio Toggle
+    |--------------------------------------------------------------------------
+    */
+
+    const togglePreviewAudio =
+        () => {
+
+            const nextAudio =
+                !audio;
+
+
+            setAudio(
+                nextAudio
+            );
+
+
+            if (
+                window.previewStream
+            ) {
+
+                window.previewStream
+                    .getAudioTracks()
+                    .forEach(
+                        track => {
+
+                            track.enabled =
+                                nextAudio;
+
+                        }
+                    );
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Preview Video Toggle
+    |--------------------------------------------------------------------------
+    */
+
+    const togglePreviewVideo =
+        () => {
+
+            const nextVideo =
+                !video;
+
+
+            setVideo(
+                nextVideo
+            );
+
+
+            if (
+                window.previewStream
+            ) {
+
+                window.previewStream
+                    .getVideoTracks()
+                    .forEach(
+                        track => {
+
+                            track.enabled =
+                                nextVideo;
+
+                        }
+                    );
+
+            }
+
+        };
 
 
     /*
@@ -983,7 +1334,8 @@ export default function VideoMeetComponent() {
 
 
                 window.localStream =
-                    newStream;
+                    newStream ||
+                    null;
 
 
                 if (
@@ -991,7 +1343,8 @@ export default function VideoMeetComponent() {
                 ) {
 
                     localVideoRef.current.srcObject =
-                        newStream;
+                        newStream ||
+                        null;
 
                 }
 
@@ -1020,12 +1373,14 @@ export default function VideoMeetComponent() {
 
                     const videoTrack =
                         newStream
-                            ?.getVideoTracks()[0];
+                            ?.getVideoTracks()[0] ||
+                        null;
 
 
                     const audioTrack =
                         newStream
-                            ?.getAudioTracks()[0];
+                            ?.getAudioTracks()[0] ||
+                        null;
 
 
                     const videoSender =
@@ -1051,8 +1406,7 @@ export default function VideoMeetComponent() {
                     ) {
 
                         await videoSender.replaceTrack(
-                            videoTrack ||
-                            null
+                            videoTrack
                         );
 
                     }
@@ -1063,8 +1417,7 @@ export default function VideoMeetComponent() {
                     ) {
 
                         await audioSender.replaceTrack(
-                            audioTrack ||
-                            null
+                            audioTrack
                         );
 
                     }
@@ -1340,6 +1693,13 @@ export default function VideoMeetComponent() {
 
                     };
 
+
+                /*
+                --------------------------------------------------------------
+                Add available local tracks.
+                This can be zero tracks.
+                --------------------------------------------------------------
+                */
 
                 if (
                     window.localStream
@@ -1868,10 +2228,6 @@ export default function VideoMeetComponent() {
                 historyError
             ) {
 
-                /*
-                History failure should never block the video call.
-                */
-
                 console.error(
                     "Unable to save meeting history:",
                     historyError
@@ -1934,23 +2290,24 @@ export default function VideoMeetComponent() {
             stopPreview();
 
 
-            const stream =
-                await createLocalStream(
-                    video,
-                    audio
-                );
+            /*
+            --------------------------------------------------------------
+            Create local media if selected.
+            It is OPTIONAL.
+            --------------------------------------------------------------
+            */
+
+            await createLocalStream(
+                video,
+                audio
+            );
 
 
-            if (!stream) {
-
-                setJoining(
-                    false
-                );
-
-                return;
-
-            }
-
+            /*
+            --------------------------------------------------------------
+            Save history.
+            --------------------------------------------------------------
+            */
 
             await saveJoinedMeetingHistory();
 
@@ -2052,22 +2409,16 @@ export default function VideoMeetComponent() {
                 stopPreview();
 
 
-                const stream =
-                    await createLocalStream(
-                        video,
-                        audio
-                    );
+                /*
+                --------------------------------------------------------------
+                Media is optional.
+                --------------------------------------------------------------
+                */
 
-
-                if (!stream) {
-
-                    setJoining(
-                        false
-                    );
-
-                    return;
-
-                }
+                await createLocalStream(
+                    video,
+                    audio
+                );
 
 
                 await saveJoinedMeetingHistory();
@@ -2126,12 +2477,12 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | In-Call Video Toggle
+    | In-call Video Toggle
     |--------------------------------------------------------------------------
     */
 
     const handleVideo =
-        () => {
+        async () => {
 
             const nextVideo =
                 !video;
@@ -2157,6 +2508,28 @@ export default function VideoMeetComponent() {
                         }
                     );
 
+
+                return;
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            If there is currently no stream and user turns camera ON,
+            create a new stream.
+            --------------------------------------------------------------
+            */
+
+            if (
+                nextVideo
+            ) {
+
+                await createLocalStream(
+                    true,
+                    audio
+                );
+
             }
 
         };
@@ -2164,12 +2537,12 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | In-Call Audio Toggle
+    | In-call Audio Toggle
     |--------------------------------------------------------------------------
     */
 
     const handleAudio =
-        () => {
+        async () => {
 
             const nextAudio =
                 !audio;
@@ -2195,6 +2568,28 @@ export default function VideoMeetComponent() {
                         }
                     );
 
+
+                return;
+
+            }
+
+
+            /*
+            --------------------------------------------------------------
+            If there is no stream and user turns microphone ON,
+            create a new stream.
+            --------------------------------------------------------------
+            */
+
+            if (
+                nextAudio
+            ) {
+
+                await createLocalStream(
+                    video,
+                    true
+                );
+
             }
 
         };
@@ -2214,16 +2609,14 @@ export default function VideoMeetComponent() {
                 !navigator.mediaDevices.getDisplayMedia
             ) {
 
+                setError(
+                    "Screen sharing is not supported by this browser."
+                );
+
                 return;
 
             }
 
-
-            /*
-            --------------------------------------------------------------
-            Stop screen sharing
-            --------------------------------------------------------------
-            */
 
             if (
                 screen
@@ -2242,7 +2635,8 @@ export default function VideoMeetComponent() {
 
 
                 if (
-                    stream
+                    stream ||
+                    (!video && !audio)
                 ) {
 
                     await replaceLocalStream(
@@ -2256,12 +2650,6 @@ export default function VideoMeetComponent() {
 
             }
 
-
-            /*
-            --------------------------------------------------------------
-            Start screen sharing
-            --------------------------------------------------------------
-            */
 
             try {
 
@@ -2311,15 +2699,9 @@ export default function VideoMeetComponent() {
                                 );
 
 
-                            if (
+                            await replaceLocalStream(
                                 stream
-                            ) {
-
-                                await replaceLocalStream(
-                                    stream
-                                );
-
-                            }
+                            );
 
                         };
 
@@ -2548,7 +2930,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Toggle Chat
+    | Chat Toggle
     |--------------------------------------------------------------------------
     */
 
@@ -2575,7 +2957,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Toggle Participants
+    | Participants Toggle
     |--------------------------------------------------------------------------
     */
 
@@ -2695,7 +3077,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Meeting Validation Loading
+    | Meeting Checking
     |--------------------------------------------------------------------------
     */
 
@@ -2977,7 +3359,7 @@ export default function VideoMeetComponent() {
                 >
 
                     {/* =================================================
-                        CAMERA PREVIEW
+                        PREVIEW
                     ================================================== */}
 
                     <Box
@@ -3038,6 +3420,110 @@ export default function VideoMeetComponent() {
                                     "scaleX(-1)"
                             }}
                         />
+
+
+                        {(!video ||
+                            !window.previewStream) && (
+
+                            <Box
+                                sx={{
+                                    position:
+                                        "absolute",
+
+                                    inset:
+                                        0,
+
+                                    display:
+                                        "flex",
+
+                                    alignItems:
+                                        "center",
+
+                                    justifyContent:
+                                        "center",
+
+                                    background:
+                                        "#111827",
+
+                                    color:
+                                        "#fff"
+                                }}
+                            >
+
+                                <Box
+                                    sx={{
+                                        textAlign:
+                                            "center"
+                                    }}
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width:
+                                                76,
+
+                                            height:
+                                                76,
+
+                                            mx:
+                                                "auto",
+
+                                            mb:
+                                                1.2,
+
+                                            borderRadius:
+                                                "50%",
+
+                                            background:
+                                                "#263041",
+
+                                            display:
+                                                "flex",
+
+                                            alignItems:
+                                                "center",
+
+                                            justifyContent:
+                                                "center"
+                                        }}
+                                    >
+
+                                        {video ? (
+                                            <VideocamOffIcon
+                                                sx={{
+                                                    fontSize:
+                                                        32
+                                                }}
+                                            />
+                                        ) : (
+                                            <VideocamOffIcon
+                                                sx={{
+                                                    fontSize:
+                                                        32
+                                                }}
+                                            />
+                                        )}
+
+                                    </Box>
+
+
+                                    <Typography
+                                        sx={{
+                                            fontWeight:
+                                                700,
+
+                                            fontSize:
+                                                "0.9rem"
+                                        }}
+                                    >
+                                        Camera is off
+                                    </Typography>
+
+                                </Box>
+
+                            </Box>
+
+                        )}
 
 
                         {/* Preview controls */}
@@ -3194,7 +3680,7 @@ export default function VideoMeetComponent() {
                                         600
                                 }}
                             >
-                                Preview
+                                Camera preview
                             </Typography>
 
                         </Box>
@@ -3203,7 +3689,7 @@ export default function VideoMeetComponent() {
 
 
                     {/* =================================================
-                        LOBBY CARD
+                        LOBBY
                     ================================================== */}
 
                     <Box
@@ -3691,10 +4177,12 @@ export default function VideoMeetComponent() {
                                             "none"
                                     }}
                                 >
+
                                     <CircularProgress
                                         size={20}
                                         color="inherit"
                                     />
+
                                 </Button>
 
                             ) : (
@@ -4086,7 +4574,10 @@ export default function VideoMeetComponent() {
                         />
 
 
-                        {!video && (
+                        {(
+                            !video ||
+                            !window.localStream
+                        ) && (
 
                             <Box
                                 sx={{
@@ -4147,7 +4638,9 @@ export default function VideoMeetComponent() {
                                         username ||
                                         "U"
                                     )
-                                        .charAt(0)
+                                        .charAt(
+                                            0
+                                        )
                                         .toUpperCase()}
                                 </Box>
 
@@ -4681,7 +5174,7 @@ export default function VideoMeetComponent() {
 
 
                 {/* =================================================
-                    PARTICIPANTS PANEL
+                    PARTICIPANTS
                 ================================================== */}
 
                 {showParticipants && (
@@ -4862,7 +5355,9 @@ export default function VideoMeetComponent() {
                                         username ||
                                         "U"
                                     )
-                                        .charAt(0)
+                                        .charAt(
+                                            0
+                                        )
                                         .toUpperCase()}
                                 </Box>
 
@@ -5006,8 +5501,6 @@ export default function VideoMeetComponent() {
                 }
             >
 
-                {/* Microphone */}
-
                 <IconButton
                     onClick={
                         handleAudio
@@ -5040,8 +5533,6 @@ export default function VideoMeetComponent() {
                 </IconButton>
 
 
-                {/* Camera */}
-
                 <IconButton
                     onClick={
                         handleVideo
@@ -5073,8 +5564,6 @@ export default function VideoMeetComponent() {
 
                 </IconButton>
 
-
-                {/* Screen share */}
 
                 {screenAvailable && (
 
@@ -5112,8 +5601,6 @@ export default function VideoMeetComponent() {
                 )}
 
 
-                {/* Chat */}
-
                 <Badge
                     badgeContent={
                         unreadMessages
@@ -5142,8 +5629,6 @@ export default function VideoMeetComponent() {
                 </Badge>
 
 
-                {/* Participants */}
-
                 <IconButton
                     onClick={
                         toggleParticipants
@@ -5161,8 +5646,6 @@ export default function VideoMeetComponent() {
                     <PeopleIcon />
                 </IconButton>
 
-
-                {/* End call */}
 
                 <IconButton
                     onClick={

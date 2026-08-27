@@ -1,15 +1,19 @@
-import { Router } from "express";
+import {
+    Router
+} from "express";
 
 import {
     googleLogin,
     logout,
     validateSession,
+    validateMeeting,
     getUserHistory,
     addToHistory
 } from "../controllers/user.controller.js";
 
 
-const router = Router();
+const router =
+    Router();
 
 
 /*
@@ -18,9 +22,10 @@ const router = Router();
 |--------------------------------------------------------------------------
 */
 
-router
-    .route("/google")
-    .post(googleLogin);
+router.post(
+    "/google",
+    googleLogin
+);
 
 
 /*
@@ -29,30 +34,46 @@ router
 |--------------------------------------------------------------------------
 */
 
-router
-    .route("/logout")
-    .post(logout);
+router.get(
+    "/validate-session",
+    validateSession
+);
 
 
-router
-    .route("/validate-session")
-    .get(validateSession);
+router.post(
+    "/logout",
+    logout
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| Meeting History
+| Meeting
 |--------------------------------------------------------------------------
 */
 
-router
-    .route("/add_to_activity")
-    .post(addToHistory);
+router.get(
+    "/meeting/:code",
+    validateMeeting
+);
 
 
-router
-    .route("/get_all_activity")
-    .get(getUserHistory);
+/*
+|--------------------------------------------------------------------------
+| User History
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+    "/get_all_activity",
+    getUserHistory
+);
+
+
+router.post(
+    "/add_to_activity",
+    addToHistory
+);
 
 
 export default router;

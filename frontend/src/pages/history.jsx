@@ -1,34 +1,24 @@
 import React, {
     useContext,
     useEffect,
-    useMemo,
     useState
 } from "react";
 
 import {
-    Alert,
     Box,
     Button,
     Card,
     CardContent,
-    Chip,
     CircularProgress,
     Container,
-    Divider,
-    IconButton,
-    Snackbar,
-    Stack,
     Typography
 } from "@mui/material";
 
 import {
-    AddRounded,
-    ArrowBackRounded,
-    ContentCopyRounded,
-    HomeRounded,
-    HistoryRounded,
-    LoginRounded,
-    VideoCallRounded
+    ArrowBack,
+    ContentCopy,
+    History as HistoryIcon,
+    VideoCall
 } from "@mui/icons-material";
 
 import {
@@ -50,54 +40,97 @@ function History() {
 
     const {
         getHistoryOfUser
-    } =
-        useContext(
-            AuthContext
+    } = useContext(
+        AuthContext
+    );
+
+
+    const [
+        meetings,
+        setMeetings
+    ] = useState([]);
+
+
+    const [
+        loading,
+        setLoading
+    ] = useState(true);
+
+
+    const [
+        error,
+        setError
+    ] = useState("");
+
+
+    const formatDate = (
+        date
+    ) => {
+
+        if (!date) {
+
+            return "Unknown date";
+
+        }
+
+
+        const parsed =
+            new Date(date);
+
+
+        if (
+            isNaN(
+                parsed.getTime()
+            )
+        ) {
+
+            return "Unknown date";
+
+        }
+
+
+        return parsed.toLocaleString(
+            undefined,
+            {
+                day:
+                    "2-digit",
+
+                month:
+                    "short",
+
+                year:
+                    "numeric",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit"
+            }
         );
 
+    };
 
-    const [meetings, setMeetings] =
-        useState([]);
-
-
-    const [loading, setLoading] =
-        useState(true);
-
-
-    const [error, setError] =
-        useState("");
-
-
-    const [copiedCode, setCopiedCode] =
-        useState("");
-
-
-    const [snackbarOpen, setSnackbarOpen] =
-        useState(false);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Fetch history
-    |--------------------------------------------------------------------------
-    */
 
     useEffect(() => {
 
         let mounted = true;
 
 
-        const fetchHistory =
+        const loadHistory =
             async () => {
 
                 try {
 
-                    setLoading(true);
+                    setLoading(
+                        true
+                    );
+
 
                     setError("");
 
 
-                    const history =
+                    const data =
                         await getHistoryOfUser();
 
 
@@ -105,11 +138,23 @@ function History() {
                         mounted
                     ) {
 
-                        setMeetings(
-                            Array.isArray(history)
-                                ? history
-                                : []
-                        );
+                        if (
+                            Array.isArray(
+                                data
+                            )
+                        ) {
+
+                            setMeetings(
+                                data
+                            );
+
+                        } else {
+
+                            setMeetings(
+                                []
+                            );
+
+                        }
 
                     }
 
@@ -118,7 +163,7 @@ function History() {
                 ) {
 
                     console.error(
-                        "History loading error:",
+                        "History error:",
                         historyError
                     );
 
@@ -127,10 +172,23 @@ function History() {
                         mounted
                     ) {
 
-                        setError(
-                            historyError.response?.data?.message ||
-                            "Unable to load your meeting history."
-                        );
+                        if (
+                            historyError.response &&
+                            historyError.response.data &&
+                            historyError.response.data.message
+                        ) {
+
+                            setError(
+                                historyError.response.data.message
+                            );
+
+                        } else {
+
+                            setError(
+                                "Unable to load meeting history."
+                            );
+
+                        }
 
                     }
 
@@ -140,7 +198,9 @@ function History() {
                         mounted
                     ) {
 
-                        setLoading(false);
+                        setLoading(
+                            false
+                        );
 
                     }
 
@@ -149,347 +209,40 @@ function History() {
             };
 
 
-        fetchHistory();
+        loadHistory();
 
 
         return () => {
 
-            mounted = false;
+            mounted =
+                false;
 
         };
 
     }, [getHistoryOfUser]);
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Format date
-    |--------------------------------------------------------------------------
-    */
-
-    const formatDate =
-        (
-            dateString
-        ) => {
-
-            if (
-                !dateString
-            ) {
-
-                return "Unknown date";
-
-            }
-
-
-            const date =
-                new Date(
-                    dateString
-                );
-
-
-            if (
-                Number.isNaN(
-                    date.getTime()
-                )
-            ) {
-
-                return "Unknown date";
-
-            }
-
-
-            return date.toLocaleDateString(
-                undefined,
-                {
-                    day:
-                        "2-digit",
-
-                    month:
-                        "short",
-
-                    year:
-                        "numeric"
-                }
-            );
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Format time
-    |--------------------------------------------------------------------------
-    */
-
-    const formatTime =
-        (
-            dateString
-        ) => {
-
-            if (
-                !dateString
-            ) {
-
-                return "";
-
-            }
-
-
-            const date =
-                new Date(
-                    dateString
-                );
-
-
-            if (
-                Number.isNaN(
-                    date.getTime()
-                )
-            ) {
-
-                return "";
-
-            }
-
-
-            return date.toLocaleTimeString(
-                undefined,
-                {
-                    hour:
-                        "2-digit",
-
-                    minute:
-                        "2-digit"
-                }
-            );
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Day label
-    |--------------------------------------------------------------------------
-    */
-
-    const getDayLabel =
-        (
-            dateString
-        ) => {
-
-            if (
-                !dateString
-            ) {
-
-                return "Older";
-
-            }
-
-
-            const date =
-                new Date(
-                    dateString
-                );
-
-
-            const today =
-                new Date();
-
-
-            const yesterday =
-                new Date();
-
-
-            yesterday.setDate(
-                yesterday.getDate() - 1
-            );
-
-
-            const sameDay =
-                (
-                    firstDate,
-                    secondDate
-                ) => {
-
-                    return (
-                        firstDate.getFullYear() ===
-                            secondDate.getFullYear()
-
-                        &&
-
-                        firstDate.getMonth() ===
-                            secondDate.getMonth()
-
-                        &&
-
-                        firstDate.getDate() ===
-                            secondDate.getDate()
-                    );
-
-                };
-
-
-            if (
-                sameDay(
-                    date,
-                    today
-                )
-            ) {
-
-                return "Today";
-
-            }
-
-
-            if (
-                sameDay(
-                    date,
-                    yesterday
-                )
-            ) {
-
-                return "Yesterday";
-
-            }
-
-
-            return formatDate(
-                dateString
-            );
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sort
-    |--------------------------------------------------------------------------
-    */
-
-    const sortedMeetings =
-        useMemo(
-            () => {
-
-                return [
-                    ...meetings
-                ].sort(
-                    (
-                        first,
-                        second
-                    ) => {
-
-                        const firstDate =
-                            new Date(
-                                first?.date ||
-                                0
-                            ).getTime();
-
-
-                        const secondDate =
-                            new Date(
-                                second?.date ||
-                                0
-                            ).getTime();
-
-
-                        return (
-                            secondDate -
-                            firstDate
-                        );
-
-                    }
-                );
-
-            },
-            [
-                meetings
-            ]
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Statistics
-    |--------------------------------------------------------------------------
-    */
-
-    const createdCount =
-        useMemo(
-            () => {
-
-                return sortedMeetings.filter(
-                    meeting =>
-                        meeting?.action ===
-                        "created"
-                ).length;
-
-            },
-            [
-                sortedMeetings
-            ]
-        );
-
-
-    const joinedCount =
-        useMemo(
-            () => {
-
-                return sortedMeetings.filter(
-                    meeting =>
-                        meeting?.action ===
-                        "joined"
-                ).length;
-
-            },
-            [
-                sortedMeetings
-            ]
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Copy
-    |--------------------------------------------------------------------------
-    */
-
     const copyMeetingCode =
         async (
-            code
+            meetingCode
         ) => {
-
-            if (
-                !code
-            ) {
-
-                return;
-
-            }
-
 
             try {
 
                 await navigator.clipboard.writeText(
-                    code
+                    meetingCode
                 );
 
-
-                setCopiedCode(
-                    code
+                alert(
+                    "Meeting code copied!"
                 );
-
-
-                setSnackbarOpen(
-                    true
-                );
-
 
             } catch (
                 copyError
             ) {
 
                 console.error(
-                    "Copy failed:",
+                    "Copy error:",
                     copyError
                 );
 
@@ -498,20 +251,12 @@ function History() {
         };
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Join
-    |--------------------------------------------------------------------------
-    */
-
     const joinMeeting =
         (
-            code
+            meetingCode
         ) => {
 
-            if (
-                !code
-            ) {
+            if (!meetingCode) {
 
                 return;
 
@@ -519,23 +264,8 @@ function History() {
 
 
             navigate(
-                `/meeting/${code}`
-            );
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Close Snackbar
-    |--------------------------------------------------------------------------
-    */
-
-    const handleSnackbarClose =
-        () => {
-
-            setSnackbarOpen(
-                false
+                "/meeting/" +
+                meetingCode
             );
 
         };
@@ -549,47 +279,27 @@ function History() {
                     "100vh",
 
                 background:
-                    "linear-gradient(180deg,#f8faff 0%,#eef4ff 100%)"
+                    "#f7f9fc"
             }}
         >
 
-            {/* =====================================================
-                HEADER
-            ====================================================== */}
+            {/* Header */}
 
             <Box
                 sx={{
-                    position:
-                        "sticky",
-
-                    top:
-                        0,
-
-                    zIndex:
-                        10,
-
                     background:
-                        "rgba(255,255,255,0.94)",
-
-                    backdropFilter:
-                        "blur(12px)",
+                        "#ffffff",
 
                     borderBottom:
-                        "1px solid rgba(0,0,0,0.06)"
+                        "1px solid #eaecf0"
                 }}
             >
 
                 <Container
-                    maxWidth="lg"
+                    maxWidth="md"
                     sx={{
                         py:
-                            {
-                                xs:
-                                    1.1,
-
-                                sm:
-                                    1.5
-                            }
+                            2
                     }}
                 >
 
@@ -599,22 +309,26 @@ function History() {
                                 "flex",
 
                             alignItems:
-                                "center",
-
-                            gap:
-                                1
+                                "center"
                         }}
                     >
 
-                        <IconButton
+                        <Button
+                            startIcon={
+                                <ArrowBack />
+                            }
                             onClick={() =>
                                 navigate(
                                     "/home"
                                 )
                             }
+                            sx={{
+                                textTransform:
+                                    "none"
+                            }}
                         >
-                            <ArrowBackRounded />
-                        </IconButton>
+                            Back
+                        </Button>
 
 
                         <Box
@@ -622,89 +336,35 @@ function History() {
                                 flex:
                                     1,
 
-                                minWidth:
-                                    0
+                                textAlign:
+                                    "center"
                             }}
                         >
 
                             <Typography
                                 sx={{
                                     fontSize:
-                                        {
-                                            xs:
-                                                "1.15rem",
-
-                                            sm:
-                                                "1.35rem"
-                                        },
+                                        "1.35rem",
 
                                     fontWeight:
                                         800,
 
                                     color:
-                                        "#171b2d"
+                                        "#17202f"
                                 }}
                             >
                                 Meeting History
                             </Typography>
 
-
-                            <Typography
-                                sx={{
-                                    display:
-                                        {
-                                            xs:
-                                                "none",
-
-                                            sm:
-                                                "block"
-                                        },
-
-                                    color:
-                                        "#667085",
-
-                                    fontSize:
-                                        "0.78rem"
-                                }}
-                            >
-                                Your created and joined meetings.
-                            </Typography>
-
                         </Box>
 
 
-                        <Button
-                            startIcon={
-                                <HomeRounded />
-                            }
-                            variant="outlined"
-                            onClick={() =>
-                                navigate(
-                                    "/home"
-                                )
-                            }
+                        <Box
                             sx={{
-                                display:
-                                    {
-                                        xs:
-                                            "none",
-
-                                        sm:
-                                            "inline-flex"
-                                    },
-
-                                borderRadius:
-                                    2.5,
-
-                                textTransform:
-                                    "none",
-
-                                fontWeight:
-                                    700
+                                width:
+                                    70
                             }}
-                        >
-                            Home
-                        </Button>
+                        />
 
                     </Box>
 
@@ -713,28 +373,15 @@ function History() {
             </Box>
 
 
-            {/* =====================================================
-                MAIN
-            ====================================================== */}
+            {/* Main */}
 
             <Container
                 maxWidth="md"
                 sx={{
                     py:
-                        {
-                            xs:
-                                3,
-
-                            sm:
-                                5,
-
-                            md:
-                                6
-                        }
+                        4
                 }}
             >
-
-                {/* Title */}
 
                 <Box
                     sx={{
@@ -742,376 +389,50 @@ function History() {
                             "flex",
 
                         alignItems:
-                            {
-                                xs:
-                                    "flex-start",
-
-                                sm:
-                                    "center"
-                            },
-
-                        justifyContent:
-                            "space-between",
+                            "center",
 
                         gap:
-                            2,
-
-                        mb:
-                            3,
-
-                        flexDirection:
-                            {
-                                xs:
-                                    "column",
-
-                                sm:
-                                    "row"
-                            }
-                    }}
-                >
-
-                    <Box>
-
-                        <Box
-                            sx={{
-                                display:
-                                    "flex",
-
-                                alignItems:
-                                    "center",
-
-                                gap:
-                                    1.2,
-
-                                mb:
-                                    0.8
-                            }}
-                        >
-
-                            <Box
-                                sx={{
-                                    width:
-                                        46,
-
-                                    height:
-                                        46,
-
-                                    borderRadius:
-                                        2.5,
-
-                                    background:
-                                        "#eaf2ff",
-
-                                    color:
-                                        "#1976d2",
-
-                                    display:
-                                        "flex",
-
-                                    alignItems:
-                                        "center",
-
-                                    justifyContent:
-                                        "center"
-                                }}
-                            >
-                                <HistoryRounded />
-                            </Box>
-
-
-                            <Typography
-                                sx={{
-                                    fontWeight:
-                                        800,
-
-                                    fontSize:
-                                        {
-                                            xs:
-                                                "1.45rem",
-
-                                            sm:
-                                                "1.7rem"
-                                        },
-
-                                    color:
-                                        "#171b2d"
-                                }}
-                            >
-                                Your meetings
-                            </Typography>
-
-                        </Box>
-
-
-                        <Typography
-                            sx={{
-                                color:
-                                    "#667085",
-
-                                fontSize:
-                                    "0.9rem"
-                            }}
-                        >
-                            {meetings.length}{" "}
-                            {meetings.length === 1
-                                ? "activity"
-                                : "activities"}{" "}
-                            recorded
-                        </Typography>
-
-                    </Box>
-
-
-                    <Button
-                        variant="contained"
-                        startIcon={
-                            <VideoCallRounded />
-                        }
-                        onClick={() =>
-                            navigate(
-                                "/home"
-                            )
-                        }
-                        sx={{
-                            borderRadius:
-                                2.5,
-
-                            textTransform:
-                                "none",
-
-                            fontWeight:
-                                700
-                        }}
-                    >
-                        New Meeting
-                    </Button>
-
-                </Box>
-
-
-                {/* =================================================
-                    STATISTICS
-                ================================================== */}
-
-                <Box
-                    sx={{
-                        display:
-                            "grid",
-
-                        gridTemplateColumns:
-                            {
-                                xs:
-                                    "1fr 1fr",
-
-                                sm:
-                                    "repeat(3,1fr)"
-                            },
-
-                        gap:
-                            1.5,
+                            1,
 
                         mb:
                             3
                     }}
                 >
 
-                    <Box
+                    <HistoryIcon
                         sx={{
-                            background:
-                                "#fff",
+                            color:
+                                "#1976d2"
+                        }}
+                    />
 
-                            border:
-                                "1px solid rgba(0,0,0,0.06)",
 
-                            borderRadius:
-                                3,
+                    <Typography
+                        sx={{
+                            fontSize:
+                                "1.6rem",
 
-                            p:
-                                2
+                            fontWeight:
+                                800
                         }}
                     >
-
-                        <Typography
-                            sx={{
-                                color:
-                                    "#667085",
-
-                                fontSize:
-                                    "0.75rem",
-
-                                mb:
-                                    0.5
-                            }}
-                        >
-                            Total
-                        </Typography>
-
-
-                        <Typography
-                            sx={{
-                                fontSize:
-                                    "1.5rem",
-
-                                fontWeight:
-                                    800,
-
-                                color:
-                                    "#171b2d"
-                            }}
-                        >
-                            {meetings.length}
-                        </Typography>
-
-                    </Box>
-
-
-                    <Box
-                        sx={{
-                            background:
-                                "#fff",
-
-                            border:
-                                "1px solid rgba(0,0,0,0.06)",
-
-                            borderRadius:
-                                3,
-
-                            p:
-                                2
-                        }}
-                    >
-
-                        <Typography
-                            sx={{
-                                color:
-                                    "#667085",
-
-                                fontSize:
-                                    "0.75rem",
-
-                                mb:
-                                    0.5
-                            }}
-                        >
-                            Created
-                        </Typography>
-
-
-                        <Typography
-                            sx={{
-                                fontSize:
-                                    "1.5rem",
-
-                                fontWeight:
-                                    800,
-
-                                color:
-                                    "#1976d2"
-                            }}
-                        >
-                            {createdCount}
-                        </Typography>
-
-                    </Box>
-
-
-                    <Box
-                        sx={{
-                            gridColumn:
-                                {
-                                    xs:
-                                        "1 / -1",
-
-                                    sm:
-                                        "auto"
-                                },
-
-                            background:
-                                "#fff",
-
-                            border:
-                                "1px solid rgba(0,0,0,0.06)",
-
-                            borderRadius:
-                                3,
-
-                            p:
-                                2
-                        }}
-                    >
-
-                        <Typography
-                            sx={{
-                                color:
-                                    "#667085",
-
-                                fontSize:
-                                    "0.75rem",
-
-                                mb:
-                                    0.5
-                            }}
-                        >
-                            Joined
-                        </Typography>
-
-
-                        <Typography
-                            sx={{
-                                fontSize:
-                                    "1.5rem",
-
-                                fontWeight:
-                                    800,
-
-                                color:
-                                    "#635bdb"
-                            }}
-                        >
-                            {joinedCount}
-                        </Typography>
-
-                    </Box>
+                        Your Meetings
+                    </Typography>
 
                 </Box>
 
 
-                {/* Error */}
-
-                {error && (
-
-                    <Alert
-                        severity="error"
-                        sx={{
-                            mb:
-                                2.5,
-
-                            borderRadius:
-                                2.5
-                        }}
-                    >
-                        {error}
-                    </Alert>
-
-                )}
-
-
-                {/* =================================================
-                    LOADING
-                ================================================== */}
+                {/* Loading */}
 
                 {loading && (
 
                     <Box
                         sx={{
                             minHeight:
-                                280,
+                                300,
 
                             display:
                                 "flex",
-
-                            flexDirection:
-                                "column",
 
                             alignItems:
                                 "center",
@@ -1121,787 +442,456 @@ function History() {
                         }}
                     >
 
-                        <CircularProgress />
-
-
-                        <Typography
+                        <Box
                             sx={{
-                                mt:
-                                    2,
-
-                                color:
-                                    "#667085"
+                                textAlign:
+                                    "center"
                             }}
                         >
-                            Loading your meetings...
-                        </Typography>
+
+                            <CircularProgress />
+
+
+                            <Typography
+                                sx={{
+                                    mt:
+                                        2,
+
+                                    color:
+                                        "#667085"
+                                }}
+                            >
+                                Loading history...
+                            </Typography>
+
+                        </Box>
 
                     </Box>
 
                 )}
 
 
-                {/* =================================================
-                    EMPTY
-                ================================================== */}
+                {/* Error */}
 
                 {!loading &&
-                    sortedMeetings.length === 0 && (
+                    error && (
 
-                        <Card
-                            elevation={0}
+                    <Card
+                        elevation={0}
+                        sx={{
+                            border:
+                                "1px solid #fecdca",
+
+                            background:
+                                "#fff6f5",
+
+                            borderRadius:
+                                3
+                        }}
+                    >
+
+                        <CardContent>
+
+                            <Typography
+                                sx={{
+                                    color:
+                                        "#b42318",
+
+                                    fontWeight:
+                                        600,
+
+                                    mb:
+                                        2
+                                }}
+                            >
+                                {error}
+                            </Typography>
+
+
+                            <Button
+                                variant="contained"
+                                onClick={() =>
+                                    window.location.reload()
+                                }
+                            >
+                                Retry
+                            </Button>
+
+                        </CardContent>
+
+                    </Card>
+
+                )}
+
+
+                {/* Empty */}
+
+                {!loading &&
+                    !error &&
+                    meetings.length === 0 && (
+
+                    <Card
+                        elevation={0}
+                        sx={{
+                            border:
+                                "1px solid #eaecf0",
+
+                            borderRadius:
+                                3,
+
+                            background:
+                                "#ffffff"
+                        }}
+                    >
+
+                        <CardContent
                             sx={{
-                                borderRadius:
-                                    4,
+                                py:
+                                    7,
 
-                                border:
-                                    "1px solid rgba(0,0,0,0.07)",
-
-                                background:
-                                    "#fff",
-
-                                boxShadow:
-                                    "0 14px 40px rgba(31,56,90,0.07)"
+                                textAlign:
+                                    "center"
                             }}
                         >
 
-                            <CardContent
+                            <HistoryIcon
                                 sx={{
-                                    py:
-                                        {
-                                            xs:
-                                                6,
+                                    fontSize:
+                                        50,
 
-                                            sm:
-                                                8
-                                        },
+                                    color:
+                                        "#98a2b3",
 
-                                    px:
-                                        3,
+                                    mb:
+                                        1
+                                }}
+                            />
 
-                                    textAlign:
-                                        "center"
+
+                            <Typography
+                                sx={{
+                                    fontSize:
+                                        "1.3rem",
+
+                                    fontWeight:
+                                        800,
+
+                                    mb:
+                                        1
                                 }}
                             >
-
-                                <Box
-                                    sx={{
-                                        width:
-                                            70,
-
-                                        height:
-                                            70,
-
-                                        mx:
-                                            "auto",
-
-                                        mb:
-                                            2,
-
-                                        borderRadius:
-                                            "22px",
-
-                                        display:
-                                            "flex",
-
-                                        alignItems:
-                                            "center",
-
-                                        justifyContent:
-                                            "center",
-
-                                        background:
-                                            "#eef4ff",
-
-                                        color:
-                                            "#1976d2"
-                                    }}
-                                >
-
-                                    <HistoryRounded
-                                        sx={{
-                                            fontSize:
-                                                34
-                                        }}
-                                    />
-
-                                </Box>
+                                No meetings yet
+                            </Typography>
 
 
-                                <Typography
-                                    sx={{
-                                        fontWeight:
-                                            800,
+                            <Typography
+                                sx={{
+                                    color:
+                                        "#667085",
 
-                                        fontSize:
-                                            "1.3rem",
-
-                                        color:
-                                            "#171b2d",
-
-                                        mb:
-                                            0.8
-                                    }}
-                                >
-                                    No meetings yet
-                                </Typography>
+                                    mb:
+                                        3
+                                }}
+                            >
+                                Your created and joined meetings
+                                will appear here.
+                            </Typography>
 
 
-                                <Typography
-                                    sx={{
-                                        color:
-                                            "#667085",
+                            <Button
+                                variant="contained"
+                                startIcon={
+                                    <VideoCall />
+                                }
+                                onClick={() =>
+                                    navigate(
+                                        "/home"
+                                    )
+                                }
+                                sx={{
+                                    textTransform:
+                                        "none",
 
-                                        maxWidth:
-                                            470,
+                                    borderRadius:
+                                        2,
 
-                                        mx:
-                                            "auto",
+                                    fontWeight:
+                                        700
+                                }}
+                            >
+                                Start Meeting
+                            </Button>
 
-                                        lineHeight:
-                                            1.6,
+                        </CardContent>
 
-                                        mb:
-                                            2.5
-                                    }}
-                                >
-                                    Start or join a meeting and
-                                    your activity will appear here.
-                                </Typography>
+                    </Card>
 
-
-                                <Button
-                                    variant="contained"
-                                    startIcon={
-                                        <VideoCallRounded />
-                                    }
-                                    onClick={() =>
-                                        navigate(
-                                            "/home"
-                                        )
-                                    }
-                                    sx={{
-                                        borderRadius:
-                                            2.5,
-
-                                        textTransform:
-                                            "none",
-
-                                        fontWeight:
-                                            700
-                                    }}
-                                >
-                                    Start a Meeting
-                                </Button>
-
-                            </CardContent>
-
-                        </Card>
-
-                    )}
+                )}
 
 
-                {/* =================================================
-                    HISTORY LIST
-                ================================================== */}
+                {/* History */}
 
                 {!loading &&
-                    sortedMeetings.length > 0 && (
+                    !error &&
+                    meetings.length > 0 && (
 
-                        <Stack
-                            spacing:
-                                1.8
-                        >
+                    <Box>
 
-                            {sortedMeetings.map(
-                                (
-                                    historyItem,
-                                    index
-                                ) => {
+                        {meetings.map(
+                            (
+                                item,
+                                index
+                            ) => {
 
-                                    const meetingCode =
-                                        historyItem?.meetingCode ||
-                                        historyItem?.meeting?.meetingCode ||
-                                        "Unknown";
-
-
-                                    const action =
-                                        historyItem?.action ||
-                                        "joined";
+                                const code =
+                                    item.meetingCode ||
+                                    (
+                                        item.meeting &&
+                                        item.meeting.meetingCode
+                                    ) ||
+                                    "Unknown";
 
 
-                                    const date =
-                                        historyItem?.date ||
-                                        historyItem?.meeting?.createdAt;
+                                const action =
+                                    item.action ||
+                                    "joined";
 
 
-                                    const isCreated =
-                                        action ===
-                                        "created";
+                                const date =
+                                    item.date ||
+                                    (
+                                        item.meeting &&
+                                        item.meeting.createdAt
+                                    );
 
 
-                                    const previousDate =
-                                        sortedMeetings[
-                                            index -
-                                            1
-                                        ]?.date;
+                                return (
 
+                                    <Card
+                                        key={
+                                            item._id ||
+                                            index
+                                        }
+                                        elevation={0}
+                                        sx={{
+                                            mb:
+                                                2,
 
-                                    const currentDay =
-                                        getDayLabel(
-                                            date
-                                        );
+                                            border:
+                                                "1px solid #eaecf0",
 
+                                            borderRadius:
+                                                3,
 
-                                    const previousDay =
-                                        getDayLabel(
-                                            previousDate
-                                        );
+                                            background:
+                                                "#ffffff"
+                                        }}
+                                    >
 
+                                        <CardContent>
 
-                                    return (
+                                            <Box
+                                                sx={{
+                                                    display:
+                                                        "flex",
 
-                                        <React.Fragment
-                                            key={
-                                                historyItem?._id ||
-                                                `${meetingCode}-${date}-${index}`
-                                            }
-                                        >
+                                                    alignItems:
+                                                        {
+                                                            xs:
+                                                                "flex-start",
 
-                                            {/* Day header */}
+                                                            sm:
+                                                                "center"
+                                                        },
 
-                                            {(
-                                                index ===
-                                                    0 ||
+                                                    justifyContent:
+                                                        "space-between",
 
-                                                currentDay !==
-                                                    previousDay
-                                            ) && (
+                                                    gap:
+                                                        2,
 
-                                                <Box
-                                                    sx={{
-                                                        pt:
-                                                            index ===
-                                                            0
-                                                                ? 0
-                                                                : 1.2
-                                                    }}
-                                                >
+                                                    flexDirection:
+                                                        {
+                                                            xs:
+                                                                "column",
+
+                                                            sm:
+                                                                "row"
+                                                        }
+                                                }}
+                                            >
+
+                                                <Box>
 
                                                     <Typography
                                                         sx={{
                                                             fontSize:
-                                                                "0.78rem",
+                                                                "1.05rem",
 
                                                             fontWeight:
                                                                 800,
 
+                                                            mb:
+                                                                0.7
+                                                        }}
+                                                    >
+                                                        {code}
+                                                    </Typography>
+
+
+                                                    <Typography
+                                                        sx={{
+                                                            color:
+                                                                action ===
+                                                                "created"
+                                                                    ? "#1976d2"
+                                                                    : "#635bdb",
+
+                                                            fontSize:
+                                                                "0.85rem",
+
+                                                            fontWeight:
+                                                                700,
+
+                                                            mb:
+                                                                0.5
+                                                        }}
+                                                    >
+                                                        {action ===
+                                                        "created"
+                                                            ? "Created"
+                                                            : "Joined"}
+                                                    </Typography>
+
+
+                                                    <Typography
+                                                        sx={{
                                                             color:
                                                                 "#667085",
 
-                                                            textTransform:
-                                                                "uppercase",
-
-                                                            letterSpacing:
-                                                                "0.05em"
+                                                            fontSize:
+                                                                "0.78rem"
                                                         }}
                                                     >
                                                         {
-                                                            currentDay
+                                                            formatDate(
+                                                                date
+                                                            )
                                                         }
                                                     </Typography>
 
                                                 </Box>
 
-                                            )}
 
-
-                                            <Card
-                                                elevation={0}
-                                                sx={{
-                                                    borderRadius:
-                                                        3,
-
-                                                    border:
-                                                        "1px solid rgba(0,0,0,0.07)",
-
-                                                    background:
-                                                        "#fff",
-
-                                                    transition:
-                                                        "transform .2s ease, box-shadow .2s ease",
-
-                                                    "&:hover":
-                                                    {
-                                                        transform:
-                                                            "translateY(-2px)",
-
-                                                        boxShadow:
-                                                            "0 14px 35px rgba(31,56,90,0.10)"
-                                                    }
-                                                }}
-                                            >
-
-                                                <CardContent
+                                                <Box
                                                     sx={{
-                                                        p:
+                                                        display:
+                                                            "flex",
+
+                                                        gap:
+                                                            1,
+
+                                                        width:
                                                             {
                                                                 xs:
-                                                                    2,
+                                                                    "100%",
 
                                                                 sm:
-                                                                    2.5
-                                                            },
-
-                                                        "&:last-child":
-                                                        {
-                                                            pb:
-                                                                {
-                                                                    xs:
-                                                                        2,
-
-                                                                    sm:
-                                                                        2.5
-                                                                }
-                                                        }
+                                                                    "auto"
+                                                            }
                                                     }}
                                                 >
 
-                                                    <Box
+                                                    <Button
+                                                        variant="outlined"
+                                                        startIcon={
+                                                            <ContentCopy />
+                                                        }
+                                                        onClick={() =>
+                                                            copyMeetingCode(
+                                                                code
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            code ===
+                                                            "Unknown"
+                                                        }
                                                         sx={{
-                                                            display:
-                                                                "flex",
-
-                                                            alignItems:
+                                                            flex:
                                                                 {
                                                                     xs:
-                                                                        "flex-start",
-
-                                                                    sm:
-                                                                        "center"
-                                                                },
-
-                                                            justifyContent:
-                                                                "space-between",
-
-                                                            gap:
-                                                                2,
-
-                                                            flexDirection:
-                                                                {
-                                                                    xs:
-                                                                        "column",
-
-                                                                    sm:
-                                                                        "row"
-                                                                }
-                                                        }}
-                                                    >
-
-                                                        {/* Information */}
-
-                                                        <Box
-                                                            sx={{
-                                                                minWidth:
-                                                                    0,
-
-                                                                flex:
-                                                                    1,
-
-                                                                width:
-                                                                    {
-                                                                        xs:
-                                                                            "100%",
-
-                                                                        sm:
-                                                                            "auto"
-                                                                    }
-                                                            }}
-                                                        >
-
-                                                            <Box
-                                                                sx={{
-                                                                    display:
-                                                                        "flex",
-
-                                                                    alignItems:
-                                                                        "center",
-
-                                                                    gap:
                                                                         1,
 
-                                                                    mb:
-                                                                        0.7
-                                                                }}
-                                                            >
-
-                                                                <Box
-                                                                    sx={{
-                                                                        width:
-                                                                            40,
-
-                                                                        height:
-                                                                            40,
-
-                                                                        minWidth:
-                                                                            40,
-
-                                                                        borderRadius:
-                                                                            2,
-
-                                                                        display:
-                                                                            "flex",
-
-                                                                        alignItems:
-                                                                            "center",
-
-                                                                        justifyContent:
-                                                                            "center",
-
-                                                                        background:
-                                                                            isCreated
-                                                                                ? "#eaf2ff"
-                                                                                : "#f1f0ff",
-
-                                                                        color:
-                                                                            isCreated
-                                                                                ? "#1976d2"
-                                                                                : "#635bdb"
-                                                                    }}
-                                                                >
-
-                                                                    {isCreated ? (
-
-                                                                        <AddRounded
-                                                                            sx={{
-                                                                                fontSize:
-                                                                                    21
-                                                                            }}
-                                                                        />
-
-                                                                    ) : (
-
-                                                                        <VideoCallRounded
-                                                                            sx={{
-                                                                                fontSize:
-                                                                                    21
-                                                                            }}
-                                                                        />
-
-                                                                    )}
-
-                                                                </Box>
-
-
-                                                                <Typography
-                                                                    sx={{
-                                                                        fontWeight:
-                                                                            750,
-
-                                                                        fontSize:
-                                                                            "1rem",
-
-                                                                        color:
-                                                                            "#171b2d",
-
-                                                                        overflow:
-                                                                            "hidden",
-
-                                                                        textOverflow:
-                                                                            "ellipsis",
-
-                                                                        whiteSpace:
-                                                                            "nowrap"
-                                                                    }}
-                                                                >
-                                                                    {
-                                                                        meetingCode
-                                                                    }
-                                                                </Typography>
-
-                                                            </Box>
-
-
-                                                            <Box
-                                                                sx={{
-                                                                    display:
-                                                                        "flex",
-
-                                                                    alignItems:
-                                                                        "center",
-
-                                                                    gap:
-                                                                        0.8,
-
-                                                                    flexWrap:
-                                                                        "wrap"
-                                                                }}
-                                                            >
-
-                                                                <Chip
-                                                                    size="small"
-                                                                    label={
-                                                                        isCreated
-                                                                            ? "Created"
-                                                                            : "Joined"
-                                                                    }
-                                                                    sx={{
-                                                                        borderRadius:
-                                                                            1.5,
-
-                                                                        background:
-                                                                            isCreated
-                                                                                ? "#eaf2ff"
-                                                                                : "#f1f0ff",
-
-                                                                        color:
-                                                                            isCreated
-                                                                                ? "#1557a5"
-                                                                                : "#554bc4",
-
-                                                                        fontWeight:
-                                                                            700
-                                                                    }}
-                                                                />
-
-
-                                                                <Typography
-                                                                    sx={{
-                                                                        fontSize:
-                                                                            "0.78rem",
-
-                                                                        color:
-                                                                            "#667085"
-                                                                    }}
-                                                                >
-                                                                    {
-                                                                        formatDate(
-                                                                            date
-                                                                        )
-                                                                    }
-                                                                </Typography>
-
-
-                                                                {formatTime(
-                                                                    date
-                                                                ) && (
-
-                                                                    <Typography
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                "0.75rem",
-
-                                                                            color:
-                                                                                "#98a2b3"
-                                                                        }}
-                                                                    >
-                                                                        •{" "}
-                                                                        {
-                                                                            formatTime(
-                                                                                date
-                                                                            )
-                                                                        }
-                                                                    </Typography>
-
-                                                                )}
-
-                                                            </Box>
-
-                                                        </Box>
-
-
-                                                        {/* Actions */}
-
-                                                        <Stack
-                                                            direction="row"
-                                                            spacing={1}
-                                                            sx={{
-                                                                width:
-                                                                    {
-                                                                        xs:
-                                                                            "100%",
-
-                                                                        sm:
-                                                                            "auto"
-                                                                    }
-                                                            }}
-                                                        >
-
-                                                            <IconButton
-                                                                onClick={() =>
-                                                                    copyMeetingCode(
-                                                                        meetingCode
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    meetingCode ===
-                                                                    "Unknown"
-                                                                }
-                                                                sx={{
-                                                                    border:
-                                                                        "1px solid #d0d5dd",
-
-                                                                    borderRadius:
-                                                                        2
-                                                                }}
-                                                            >
-
-                                                                <ContentCopyRounded
-                                                                    sx={{
-                                                                        fontSize:
-                                                                            18
-                                                                    }}
-                                                                />
-
-                                                            </IconButton>
-
-
-                                                            <Button
-                                                                variant="contained"
-                                                                startIcon={
-                                                                    <VideoCallRounded />
-                                                                }
-                                                                onClick={() =>
-                                                                    joinMeeting(
-                                                                        meetingCode
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    meetingCode ===
-                                                                    "Unknown"
-                                                                }
-                                                                sx={{
-                                                                    flex:
-                                                                        {
-                                                                            xs:
-                                                                                1,
-
-                                                                            sm:
-                                                                                "initial"
-                                                                        },
-
-                                                                    minWidth:
-                                                                        {
-                                                                            sm:
-                                                                                120
-                                                                        },
-
-                                                                    borderRadius:
-                                                                        2,
-
-                                                                    textTransform:
-                                                                        "none",
-
-                                                                    fontWeight:
-                                                                        700
-                                                                }}
-                                                            >
-                                                                Join
-                                                            </Button>
-
-                                                        </Stack>
-
-                                                    </Box>
-
-                                                </CardContent>
-
-                                            </Card>
-
-                                        </React.Fragment>
-
-                                    );
-
-                                }
-                            )}
-
-                        </Stack>
-
-                    )}
-
-
-                {/* Footer */}
-
-                <Divider
-                    sx={{
-                        mt:
-                            5,
-
-                        mb:
-                            2
-                    }}
-                />
-
-
-                <Box
-                    sx={{
-                        display:
-                            "flex",
-
-                        alignItems:
-                            "center",
-
-                        justifyContent:
-                            "center",
-
-                        gap:
-                            0.7,
-
-                        color:
-                            "#98a2b3"
-                    }}
-                >
-
-                    <LoginRounded
-                        sx={{
-                            fontSize:
-                                16
-                        }}
-                    />
-
-
-                    <Typography
-                        sx={{
-                            fontSize:
-                                "0.75rem"
-                        }}
-                    >
-                        Signed in with Google
-                    </Typography>
-
-                </Box>
+                                                                    sm:
+                                                                        "initial"
+                                                                },
+
+                                                            textTransform:
+                                                                "none",
+
+                                                            borderRadius:
+                                                                2
+                                                        }}
+                                                    >
+                                                        Copy
+                                                    </Button>
+
+
+                                                    <Button
+                                                        variant="contained"
+                                                        startIcon={
+                                                            <VideoCall />
+                                                        }
+                                                        onClick={() =>
+                                                            joinMeeting(
+                                                                code
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            code ===
+                                                            "Unknown"
+                                                        }
+                                                        sx={{
+                                                            flex:
+                                                                {
+                                                                    xs:
+                                                                        1,
+
+                                                                    sm:
+                                                                        "initial"
+                                                                },
+
+                                                            textTransform:
+                                                                "none",
+
+                                                            borderRadius:
+                                                                2,
+
+                                                            fontWeight:
+                                                                700
+                                                        }}
+                                                    >
+                                                        Join
+                                                    </Button>
+
+                                                </Box>
+
+                                            </Box>
+
+                                        </CardContent>
+
+                                    </Card>
+
+                                );
+
+                            }
+                        )}
+
+                    </Box>
+
+                )}
 
             </Container>
-
-
-            {/* =====================================================
-                SNACKBAR
-            ====================================================== */}
-
-            <Snackbar
-                open={
-                    snackbarOpen
-                }
-                autoHideDuration={
-                    2200
-                }
-                onClose={
-                    handleSnackbarClose
-                }
-            >
-
-                <Alert
-                    severity="success"
-                    variant="filled"
-                    onClose={
-                        handleSnackbarClose
-                    }
-                >
-                    {copiedCode
-                        ? `Meeting code "${copiedCode}" copied`
-                        : "Copied"}
-                </Alert>
-
-            </Snackbar>
 
         </Box>
 

@@ -7,13 +7,25 @@ import {
 } from "react-router-dom";
 
 
-import LandingPage from "./pages/landing";
-import Authentication from "./pages/authentication";
-import HomeComponent from "./pages/home";
-import History from "./pages/history";
-import VideoMeetComponent from "./pages/VideoMeet";
+import LandingPage
+    from "./pages/landing";
 
-import { AuthProvider } from "./contexts/AuthContext";
+import Authentication
+    from "./pages/authentication";
+
+import HomeComponent
+    from "./pages/home";
+
+import History
+    from "./pages/history";
+
+import VideoMeetComponent
+    from "./pages/VideoMeet";
+
+
+import {
+    AuthProvider
+} from "./contexts/AuthContext";
 
 
 function App() {
@@ -48,7 +60,7 @@ function App() {
                         />
 
 
-                        {/* Authenticated Dashboard */}
+                        {/* Dashboard */}
 
                         <Route
                             path="/home"
@@ -78,7 +90,7 @@ function App() {
                         />
 
 
-                        {/* Fallback */}
+                        {/* Unknown route */}
 
                         <Route
                             path="*"

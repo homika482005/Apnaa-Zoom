@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 
 import {
+    AddRounded,
     ArrowBackRounded,
     ContentCopyRounded,
     HomeRounded,
@@ -43,27 +44,33 @@ import withAuth from "../utils/withAuth";
 
 function History() {
 
-    const navigate = useNavigate();
+    const navigate =
+        useNavigate();
 
 
     const {
         getHistoryOfUser
-    } = useContext(
-        AuthContext
-    );
+    } =
+        useContext(
+            AuthContext
+        );
 
 
     const [meetings, setMeetings] =
         useState([]);
 
+
     const [loading, setLoading] =
         useState(true);
+
 
     const [error, setError] =
         useState("");
 
+
     const [copiedCode, setCopiedCode] =
         useState("");
+
 
     const [snackbarOpen, setSnackbarOpen] =
         useState(false);
@@ -71,7 +78,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Fetch meeting history
+    | Fetch History
     |--------------------------------------------------------------------------
     */
 
@@ -86,6 +93,7 @@ function History() {
                 try {
 
                     setLoading(true);
+
                     setError("");
 
 
@@ -105,7 +113,9 @@ function History() {
 
                     }
 
-                } catch (historyError) {
+                } catch (
+                    historyError
+                ) {
 
                     console.error(
                         "History loading error:",
@@ -152,12 +162,14 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Date formatting
+    | Format Date
     |--------------------------------------------------------------------------
     */
 
     const formatDate =
-        (dateString) => {
+        (
+            dateString
+        ) => {
 
             if (
                 !dateString
@@ -202,8 +214,16 @@ function History() {
         };
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Format Time
+    |--------------------------------------------------------------------------
+    */
+
     const formatTime =
-        (dateString) => {
+        (
+            dateString
+        ) => {
 
             if (
                 !dateString
@@ -247,134 +267,7 @@ function History() {
 
     /*
     |--------------------------------------------------------------------------
-    | Sort history
-    |--------------------------------------------------------------------------
-    */
-
-    const sortedMeetings =
-        useMemo(() => {
-
-            return [...meetings].sort(
-                (
-                    first,
-                    second
-                ) => {
-
-                    const firstDate =
-                        new Date(
-                            first?.date || 0
-                        ).getTime();
-
-
-                    const secondDate =
-                        new Date(
-                            second?.date || 0
-                        ).getTime();
-
-
-                    return (
-                        secondDate -
-                        firstDate
-                    );
-
-                }
-            );
-
-        }, [meetings]);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Copy meeting code
-    |--------------------------------------------------------------------------
-    */
-
-    const copyMeetingCode =
-        async (
-            code
-        ) => {
-
-            if (
-                !code
-            ) {
-
-                return;
-
-            }
-
-
-            try {
-
-                await navigator
-                    .clipboard
-                    .writeText(
-                        code
-                    );
-
-
-                setCopiedCode(
-                    code
-                );
-
-                setSnackbarOpen(
-                    true
-                );
-
-
-                setTimeout(
-                    () => {
-
-                        setCopiedCode(
-                            ""
-                        );
-
-                    },
-                    1800
-                );
-
-
-            } catch (copyError) {
-
-                console.error(
-                    "Copy failed:",
-                    copyError
-                );
-
-            }
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Join existing meeting
-    |--------------------------------------------------------------------------
-    */
-
-    const joinMeeting =
-        (
-            code
-        ) => {
-
-            if (
-                !code
-            ) {
-
-                return;
-
-            }
-
-
-            navigate(
-                `/meeting/${code}`
-            );
-
-        };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Group meetings by day
+    | Day Label
     |--------------------------------------------------------------------------
     */
 
@@ -415,28 +308,30 @@ function History() {
                 (
                     firstDate,
                     secondDate
-                ) => (
+                ) => {
 
-                    firstDate
-                        .getFullYear() ===
-                    secondDate
-                        .getFullYear()
+                    return (
+                        firstDate
+                            .getFullYear() ===
+                        secondDate
+                            .getFullYear()
 
-                    &&
+                        &&
 
-                    firstDate
-                        .getMonth() ===
-                    secondDate
-                        .getMonth()
+                        firstDate
+                            .getMonth() ===
+                        secondDate
+                            .getMonth()
 
-                    &&
+                        &&
 
-                    firstDate
-                        .getDate() ===
-                    secondDate
-                        .getDate()
+                        firstDate
+                            .getDate() ===
+                        secondDate
+                            .getDate()
+                    );
 
-                );
+                };
 
 
             if (
@@ -465,6 +360,184 @@ function History() {
 
             return formatDate(
                 dateString
+            );
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sort History
+    |--------------------------------------------------------------------------
+    */
+
+    const sortedMeetings =
+        useMemo(
+            () => {
+
+                return [
+                    ...meetings
+                ].sort(
+                    (
+                        first,
+                        second
+                    ) => {
+
+                        const firstDate =
+                            new Date(
+                                first?.date ||
+                                0
+                            ).getTime();
+
+
+                        const secondDate =
+                            new Date(
+                                second?.date ||
+                                0
+                            ).getTime();
+
+
+                        return (
+                            secondDate -
+                            firstDate
+                        );
+
+                    }
+                );
+
+            },
+            [
+                meetings
+            ]
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Statistics
+    |--------------------------------------------------------------------------
+    */
+
+    const createdCount =
+        useMemo(
+            () => {
+
+                return sortedMeetings.filter(
+                    meeting =>
+                        meeting?.action ===
+                        "created"
+                ).length;
+
+            },
+            [
+                sortedMeetings
+            ]
+        );
+
+
+    const joinedCount =
+        useMemo(
+            () => {
+
+                return sortedMeetings.filter(
+                    meeting =>
+                        meeting?.action ===
+                        "joined"
+                ).length;
+
+            },
+            [
+                sortedMeetings
+            ]
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Copy Meeting Code
+    |--------------------------------------------------------------------------
+    */
+
+    const copyMeetingCode =
+        async (
+            code
+        ) => {
+
+            if (
+                !code
+            ) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await navigator
+                    .clipboard
+                    .writeText(
+                        code
+                    );
+
+
+                setCopiedCode(
+                    code
+                );
+
+
+                setSnackbarOpen(
+                    true
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        setCopiedCode(
+                            ""
+                        );
+
+                    },
+                    1800
+                );
+
+            } catch (
+                copyError
+            ) {
+
+                console.error(
+                    "Copy failed:",
+                    copyError
+                );
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Join Meeting
+    |--------------------------------------------------------------------------
+    */
+
+    const joinMeeting =
+        (
+            code
+        ) => {
+
+            if (
+                !code
+            ) {
+
+                return;
+
+            }
+
+
+            navigate(
+                `/meeting/${code}`
             );
 
         };
@@ -597,7 +670,7 @@ function History() {
                                         "#667085"
                                 }}
                             >
-                                Rejoin a previous meeting or copy its code.
+                                Your created and joined meetings.
                             </Typography>
 
                         </Box>
@@ -644,7 +717,7 @@ function History() {
 
 
             {/* =====================================================
-                MAIN CONTENT
+                MAIN
             ====================================================== */}
 
             <Container
@@ -664,7 +737,7 @@ function History() {
                 }}
             >
 
-                {/* Summary */}
+                {/* Header */}
 
                 <Box
                     sx={{
@@ -784,9 +857,9 @@ function History() {
                         >
                             {meetings.length}{" "}
                             {meetings.length === 1
-                                ? "meeting"
-                                : "meetings"}{" "}
-                            in your history
+                                ? "activity"
+                                : "activities"}{" "}
+                            recorded
                         </Typography>
 
                     </Box>
@@ -818,6 +891,193 @@ function History() {
                     >
                         New Meeting
                     </Button>
+
+                </Box>
+
+
+                {/* =================================================
+                    STAT CARDS
+                ================================================== */}
+
+                <Box
+                    sx={{
+                        display:
+                            "grid",
+
+                        gridTemplateColumns:
+                            {
+                                xs:
+                                    "1fr 1fr",
+
+                                sm:
+                                    "1fr 1fr 1fr"
+                            },
+
+                        gap:
+                            1.5,
+
+                        mb:
+                            3
+                    }}
+                >
+
+                    <Box
+                        sx={{
+                            background:
+                                "#ffffff",
+
+                            border:
+                                "1px solid rgba(0,0,0,0.06)",
+
+                            borderRadius:
+                                3,
+
+                            p:
+                                2
+                        }}
+                    >
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "0.75rem",
+
+                                color:
+                                    "#667085",
+
+                                mb:
+                                    0.5
+                            }}
+                        >
+                            Total
+                        </Typography>
+
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "1.5rem",
+
+                                fontWeight:
+                                    800,
+
+                                color:
+                                    "#171b2d"
+                            }}
+                        >
+                            {meetings.length}
+                        </Typography>
+
+                    </Box>
+
+
+                    <Box
+                        sx={{
+                            background:
+                                "#ffffff",
+
+                            border:
+                                "1px solid rgba(0,0,0,0.06)",
+
+                            borderRadius:
+                                3,
+
+                            p:
+                                2
+                        }}
+                    >
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "0.75rem",
+
+                                color:
+                                    "#667085",
+
+                                mb:
+                                    0.5
+                            }}
+                        >
+                            Created
+                        </Typography>
+
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "1.5rem",
+
+                                fontWeight:
+                                    800,
+
+                                color:
+                                    "#1976d2"
+                            }}
+                        >
+                            {createdCount}
+                        </Typography>
+
+                    </Box>
+
+
+                    <Box
+                        sx={{
+                            gridColumn:
+                                {
+                                    xs:
+                                        "1 / -1",
+
+                                    sm:
+                                        "auto"
+                                },
+
+                            background:
+                                "#ffffff",
+
+                            border:
+                                "1px solid rgba(0,0,0,0.06)",
+
+                            borderRadius:
+                                3,
+
+                            p:
+                                2
+                        }}
+                    >
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "0.75rem",
+
+                                color:
+                                    "#667085",
+
+                                mb:
+                                    0.5
+                            }}
+                        >
+                            Joined
+                        </Typography>
+
+
+                        <Typography
+                            sx={{
+                                fontSize:
+                                    "1.5rem",
+
+                                fontWeight:
+                                    800,
+
+                                color:
+                                    "#635bdb"
+                            }}
+                        >
+                            {joinedCount}
+                        </Typography>
+
+                    </Box>
 
                 </Box>
 
@@ -886,7 +1146,7 @@ function History() {
 
 
                 {/* =================================================
-                    EMPTY STATE
+                    EMPTY
                 ================================================== */}
 
                 {!loading &&
@@ -1010,8 +1270,7 @@ function History() {
                                     }}
                                 >
                                     Start or join a meeting and
-                                    it will appear here for quick
-                                    access later.
+                                    your activity will appear here.
                                 </Typography>
 
 
@@ -1054,7 +1313,7 @@ function History() {
                     sortedMeetings.length > 0 && (
 
                         <Stack
-                            spacing={2}
+                            spacing={1.8}
                         >
 
                             {sortedMeetings.map(
@@ -1072,6 +1331,16 @@ function History() {
                                         meeting?.date;
 
 
+                                    const action =
+                                        meeting?.action ||
+                                        "joined";
+
+
+                                    const isCreated =
+                                        action ===
+                                        "created";
+
+
                                     return (
 
                                         <React.Fragment
@@ -1080,6 +1349,8 @@ function History() {
                                                 `${code}-${date}-${index}`
                                             }
                                         >
+
+                                            {/* Day heading */}
 
                                             {(
                                                 index === 0 ||
@@ -1099,7 +1370,7 @@ function History() {
                                                         pt:
                                                             index === 0
                                                                 ? 0
-                                                                : 1
+                                                                : 1.5
                                                     }}
                                                 >
 
@@ -1215,13 +1486,24 @@ function History() {
                                                         }}
                                                     >
 
+                                                        {/* Meeting info */}
+
                                                         <Box
                                                             sx={{
                                                                 minWidth:
                                                                     0,
 
                                                                 flex:
-                                                                    1
+                                                                    1,
+
+                                                                width:
+                                                                    {
+                                                                        xs:
+                                                                            "100%",
+
+                                                                        sm:
+                                                                            "auto"
+                                                                    }
                                                             }}
                                                         >
 
@@ -1265,46 +1547,68 @@ function History() {
                                                                             "center",
 
                                                                         background:
-                                                                            "#eef4ff",
+                                                                            isCreated
+                                                                                ? "#eaf2ff"
+                                                                                : "#f1f0ff",
 
                                                                         color:
-                                                                            "#1976d2"
+                                                                            isCreated
+                                                                                ? "#1976d2"
+                                                                                : "#635bdb"
                                                                     }}
                                                                 >
 
-                                                                    <VideoCallRounded
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                21
-                                                                        }}
-                                                                    />
+                                                                    {isCreated ? (
+                                                                        <AddRounded
+                                                                            sx={{
+                                                                                fontSize:
+                                                                                    21
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <VideoCallRounded
+                                                                            sx={{
+                                                                                fontSize:
+                                                                                    21
+                                                                            }}
+                                                                        />
+                                                                    )}
 
                                                                 </Box>
 
 
-                                                                <Typography
+                                                                <Box
                                                                     sx={{
-                                                                        fontWeight:
-                                                                            750,
-
-                                                                        fontSize:
-                                                                            "1rem",
-
-                                                                        color:
-                                                                            "#171b2d",
-
-                                                                        overflow:
-                                                                            "hidden",
-
-                                                                        textOverflow:
-                                                                            "ellipsis",
-
-                                                                        whiteSpace:
-                                                                            "nowrap"
+                                                                        minWidth:
+                                                                            0
                                                                     }}
                                                                 >
-                                                                    {code}
-                                                                </Typography>
+
+                                                                    <Typography
+                                                                        sx={{
+                                                                            fontWeight:
+                                                                                750,
+
+                                                                            fontSize:
+                                                                                "1rem",
+
+                                                                            color:
+                                                                                "#171b2d",
+
+                                                                            overflow:
+                                                                                "hidden",
+
+                                                                            textOverflow:
+                                                                                "ellipsis",
+
+                                                                            whiteSpace:
+                                                                                "nowrap"
+                                                                        }}
+                                                                    >
+                                                                        {code}
+                                                                    </Typography>
+
+                                                                </Box>
 
                                                             </Box>
 
@@ -1328,24 +1632,45 @@ function History() {
                                                                 <Chip
                                                                     size="small"
                                                                     label={
-                                                                        formatDate(
-                                                                            date
-                                                                        )
+                                                                        isCreated
+                                                                            ? "Created"
+                                                                            : "Joined"
                                                                     }
                                                                     sx={{
                                                                         borderRadius:
                                                                             1.5,
 
                                                                         background:
-                                                                            "#f2f4f7",
+                                                                            isCreated
+                                                                                ? "#eaf2ff"
+                                                                                : "#f1f0ff",
 
                                                                         color:
-                                                                            "#475467",
+                                                                            isCreated
+                                                                                ? "#1557a5"
+                                                                                : "#554bc4",
 
                                                                         fontWeight:
-                                                                            600
+                                                                            700
                                                                     }}
                                                                 />
+
+
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            "0.78rem",
+
+                                                                        color:
+                                                                            "#667085"
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        formatDate(
+                                                                            date
+                                                                        )
+                                                                    }
+                                                                </Typography>
 
 
                                                                 {formatTime(
@@ -1355,12 +1680,13 @@ function History() {
                                                                     <Typography
                                                                         sx={{
                                                                             fontSize:
-                                                                                "0.78rem",
+                                                                                "0.75rem",
 
                                                                             color:
                                                                                 "#98a2b3"
                                                                         }}
                                                                     >
+                                                                        •{" "}
                                                                         {
                                                                             formatTime(
                                                                                 date
@@ -1374,6 +1700,8 @@ function History() {
 
                                                         </Box>
 
+
+                                                        {/* Actions */}
 
                                                         <Stack
                                                             direction="row"
@@ -1408,12 +1736,14 @@ function History() {
                                                                         "#344054"
                                                                 }}
                                                             >
+
                                                                 <ContentCopyRounded
                                                                     sx={{
                                                                         fontSize:
                                                                             18
                                                                     }}
                                                                 />
+
                                                             </IconButton>
 
 
@@ -1476,9 +1806,7 @@ function History() {
                     )}
 
 
-                {/* =================================================
-                    FOOTER
-                ================================================== */}
+                {/* Footer */}
 
                 <Divider
                     sx={{
@@ -1531,6 +1859,10 @@ function History() {
 
             </Container>
 
+
+            {/* =====================================================
+                COPY NOTIFICATION
+            ====================================================== */}
 
             <Snackbar
                 open={

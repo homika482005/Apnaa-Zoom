@@ -2,11 +2,13 @@ import {
     Router
 } from "express";
 
+
 import {
     googleLogin,
     logout,
     validateSession,
     validateMeeting,
+    createMeeting,
     getUserHistory,
     addToHistory
 } from "../controllers/user.controller.js";
@@ -48,9 +50,15 @@ router.post(
 
 /*
 |--------------------------------------------------------------------------
-| Meeting
+| Meetings
 |--------------------------------------------------------------------------
 */
+
+router.post(
+    "/meetings",
+    createMeeting
+);
+
 
 router.get(
     "/meeting/:code",

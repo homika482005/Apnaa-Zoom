@@ -59,6 +59,12 @@ function HomeComponent() {
         useState("");
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Generate Meeting Code
+    |--------------------------------------------------------------------------
+    */
+
     const generateMeetingCode = () => {
 
         const characters =
@@ -86,6 +92,12 @@ function HomeComponent() {
     };
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Start New Meeting
+    |--------------------------------------------------------------------------
+    */
+
     const handleStartMeeting = async () => {
 
         try {
@@ -103,7 +115,9 @@ function HomeComponent() {
             );
 
 
-            navigate(`/${code}`);
+            navigate(
+                `/meeting/${code}`
+            );
 
 
         } catch (err) {
@@ -127,12 +141,19 @@ function HomeComponent() {
     };
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Join Meeting
+    |--------------------------------------------------------------------------
+    */
+
     const handleJoinMeeting = async () => {
 
         const cleanCode =
             meetingCode
                 .trim()
-                .replace(/\s+/g, "");
+                .replace(/\s+/g, "")
+                .replace(/^\/+/, "");
 
 
         if (!cleanCode) {
@@ -158,7 +179,7 @@ function HomeComponent() {
 
 
             navigate(
-                `/${cleanCode}`
+                `/meeting/${cleanCode}`
             );
 
 
@@ -183,12 +204,19 @@ function HomeComponent() {
     };
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Copy Meeting Code
+    |--------------------------------------------------------------------------
+    */
+
     const handleCopyMeetingCode = async () => {
 
         const cleanCode =
             meetingCode
                 .trim()
-                .replace(/\s+/g, "");
+                .replace(/\s+/g, "")
+                .replace(/^\/+/, "");
 
 
         if (!cleanCode) {
@@ -212,7 +240,7 @@ function HomeComponent() {
         } catch (err) {
 
             console.error(
-                "Copy failed:",
+                "Copy meeting code failed:",
                 err
             );
 
@@ -221,6 +249,12 @@ function HomeComponent() {
     };
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
+
     const handleLogoutUser = async () => {
 
         await handleLogout();
@@ -228,7 +262,15 @@ function HomeComponent() {
     };
 
 
-    const handleKeyDown = (event) => {
+    /*
+    |--------------------------------------------------------------------------
+    | Enter Key
+    |--------------------------------------------------------------------------
+    */
+
+    const handleKeyDown = (
+        event
+    ) => {
 
         if (
             event.key === "Enter" &&
@@ -252,7 +294,9 @@ function HomeComponent() {
             }}
         >
 
-            {/* Header */}
+            {/* =====================================================
+                HEADER
+            ====================================================== */}
 
             <Box
                 sx={{
@@ -261,8 +305,7 @@ function HomeComponent() {
                     zIndex: 10,
                     backgroundColor:
                         "rgba(255,255,255,0.92)",
-                    backdropFilter:
-                        "blur(12px)",
+                    backdropFilter: "blur(12px)",
                     borderBottom:
                         "1px solid rgba(0,0,0,0.06)"
                 }}
@@ -282,7 +325,8 @@ function HomeComponent() {
                         sx={{
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between"
+                            justifyContent:
+                                "space-between"
                         }}
                     >
 
@@ -297,12 +341,14 @@ function HomeComponent() {
                                         sm: "1.55rem"
                                     },
                                     fontWeight: 800,
-                                    letterSpacing: "-0.04em",
+                                    letterSpacing:
+                                        "-0.04em",
                                     color: "#171b2d"
                                 }}
                             >
                                 ApnaaZoom
                             </Typography>
+
 
                             <Typography
                                 sx={{
@@ -320,12 +366,13 @@ function HomeComponent() {
                         </Box>
 
 
-                        {/* Actions */}
+                        {/* Header actions */}
 
                         <Box
                             sx={{
                                 display: "flex",
-                                alignItems: "center",
+                                alignItems:
+                                    "center",
                                 gap: {
                                     xs: 0.3,
                                     sm: 1
@@ -349,7 +396,9 @@ function HomeComponent() {
                                     display: {
                                         xs: "none",
                                         sm: "inline-flex"
-                                    }
+                                    },
+                                    textTransform:
+                                        "none"
                                 }}
                             >
                                 History
@@ -384,9 +433,12 @@ function HomeComponent() {
                                 sx={{
                                     minWidth: "auto",
                                     color: "#374151",
-                                    fontWeight: 600
+                                    fontWeight: 600,
+                                    textTransform:
+                                        "none"
                                 }}
                             >
+
                                 <Box
                                     component="span"
                                     sx={{
@@ -398,6 +450,7 @@ function HomeComponent() {
                                 >
                                     Logout
                                 </Box>
+
                             </Button>
 
                         </Box>
@@ -409,7 +462,9 @@ function HomeComponent() {
             </Box>
 
 
-            {/* Main */}
+            {/* =====================================================
+                MAIN
+            ====================================================== */}
 
             <Container
                 maxWidth="lg"
@@ -473,12 +528,14 @@ function HomeComponent() {
                             },
                             lineHeight: 1.08,
                             fontWeight: 800,
-                            letterSpacing: "-0.055em",
+                            letterSpacing:
+                                "-0.055em",
                             color: "#171b2d",
                             mb: 1.5
                         }}
                     >
                         Video meetings,
+
                         <Box
                             component="span"
                             sx={{
@@ -510,7 +567,9 @@ function HomeComponent() {
                 </Box>
 
 
-                {/* Main cards */}
+                {/* =================================================
+                    ACTION CARDS
+                ================================================== */}
 
                 <Box
                     sx={{
@@ -568,11 +627,11 @@ function HomeComponent() {
                                     borderRadius: 2.5,
                                     display: "flex",
                                     alignItems: "center",
-                                    justifyContent: "center",
+                                    justifyContent:
+                                        "center",
                                     background:
                                         "#e8f1ff",
-                                    color:
-                                        "#1976d2",
+                                    color: "#1976d2",
                                     mb: 2
                                 }}
                             >
@@ -584,10 +643,14 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    fontSize: "1.35rem",
-                                    fontWeight: 750,
-                                    color: "#171b2d",
-                                    mb: 0.8
+                                    fontSize:
+                                        "1.35rem",
+                                    fontWeight:
+                                        750,
+                                    color:
+                                        "#171b2d",
+                                    mb:
+                                        0.8
                                 }}
                             >
                                 Start a meeting
@@ -596,14 +659,17 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    color: "#697386",
-                                    lineHeight: 1.6,
-                                    mb: 3
+                                    color:
+                                        "#697386",
+                                    lineHeight:
+                                        1.6,
+                                    mb:
+                                        3
                                 }}
                             >
                                 Create an instant meeting
-                                and invite others with your
-                                meeting link.
+                                and invite others with
+                                your meeting link.
                             </Typography>
 
 
@@ -624,11 +690,16 @@ function HomeComponent() {
                                     loading
                                 }
                                 sx={{
-                                    py: 1.45,
-                                    borderRadius: 2.5,
-                                    fontWeight: 700,
-                                    textTransform: "none",
-                                    fontSize: "1rem",
+                                    py:
+                                        1.45,
+                                    borderRadius:
+                                        2.5,
+                                    fontWeight:
+                                        700,
+                                    textTransform:
+                                        "none",
+                                    fontSize:
+                                        "1rem",
                                     boxShadow:
                                         "0 8px 18px rgba(25,118,210,0.22)"
                                 }}
@@ -680,15 +751,20 @@ function HomeComponent() {
                                 sx={{
                                     width: 48,
                                     height: 48,
-                                    borderRadius: 2.5,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                    borderRadius:
+                                        2.5,
+                                    display:
+                                        "flex",
+                                    alignItems:
+                                        "center",
+                                    justifyContent:
+                                        "center",
                                     background:
                                         "#f1f0ff",
                                     color:
                                         "#635bdb",
-                                    mb: 2
+                                    mb:
+                                        2
                                 }}
                             >
 
@@ -699,10 +775,14 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    fontSize: "1.35rem",
-                                    fontWeight: 750,
-                                    color: "#171b2d",
-                                    mb: 0.8
+                                    fontSize:
+                                        "1.35rem",
+                                    fontWeight:
+                                        750,
+                                    color:
+                                        "#171b2d",
+                                    mb:
+                                        0.8
                                 }}
                             >
                                 Join a meeting
@@ -711,9 +791,12 @@ function HomeComponent() {
 
                             <Typography
                                 sx={{
-                                    color: "#697386",
-                                    lineHeight: 1.6,
-                                    mb: 2.5
+                                    color:
+                                        "#697386",
+                                    lineHeight:
+                                        1.6,
+                                    mb:
+                                        2.5
                                 }}
                             >
                                 Enter the meeting code
@@ -727,11 +810,16 @@ function HomeComponent() {
                                     meetingCode
                                 }
                                 onChange={
-                                    (event) => {
+                                    event => {
+
                                         setMeetingCode(
                                             event.target.value
                                         );
-                                        setError("");
+
+                                        setError(
+                                            ""
+                                        );
+
                                     }
                                 }
                                 onKeyDown={
@@ -740,12 +828,24 @@ function HomeComponent() {
                                 label="Meeting Code"
                                 placeholder="e.g. ab12cd34"
                                 autoComplete="off"
+                                sx={{
+                                    mb:
+                                        1.5,
+
+                                    "& .MuiOutlinedInput-root":
+                                    {
+                                        borderRadius:
+                                            2.5
+                                    }
+                                }}
                                 InputProps={{
                                     endAdornment:
                                         meetingCode && (
+
                                             <InputAdornment
                                                 position="end"
                                             >
+
                                                 <IconButton
                                                     size="small"
                                                     onClick={
@@ -757,14 +857,10 @@ function HomeComponent() {
                                                         fontSize="small"
                                                     />
                                                 </IconButton>
+
                                             </InputAdornment>
+
                                         )
-                                }}
-                                sx={{
-                                    mb: 1.5,
-                                    "& .MuiOutlinedInput-root": {
-                                        borderRadius: 2.5
-                                    }
                                 }}
                             />
 
@@ -780,11 +876,16 @@ function HomeComponent() {
                                     loading
                                 }
                                 sx={{
-                                    py: 1.4,
-                                    borderRadius: 2.5,
-                                    fontWeight: 700,
-                                    textTransform: "none",
-                                    fontSize: "1rem"
+                                    py:
+                                        1.4,
+                                    borderRadius:
+                                        2.5,
+                                    fontWeight:
+                                        700,
+                                    textTransform:
+                                        "none",
+                                    fontSize:
+                                        "1rem"
                                 }}
                             >
                                 {loading
@@ -811,7 +912,8 @@ function HomeComponent() {
                             px: 1,
                             color: "#d32f2f",
                             textAlign: "center",
-                            fontSize: "0.9rem"
+                            fontSize:
+                                "0.9rem"
                         }}
                     >
                         {error}
@@ -820,7 +922,9 @@ function HomeComponent() {
                 )}
 
 
-                {/* Bottom info */}
+                {/* =================================================
+                    INFO
+                ================================================== */}
 
                 <Box
                     sx={{
@@ -842,13 +946,20 @@ function HomeComponent() {
 
                     <Box
                         sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
-                            color: "#7a8496",
-                            textAlign: "center"
+                            display:
+                                "flex",
+                            justifyContent:
+                                "center",
+                            alignItems:
+                                "center",
+                            gap:
+                                1,
+                            flexWrap:
+                                "wrap",
+                            color:
+                                "#7a8496",
+                            textAlign:
+                                "center"
                         }}
                     >
 
@@ -861,9 +972,12 @@ function HomeComponent() {
 
                         <Box
                             sx={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: "50%",
+                                width:
+                                    4,
+                                height:
+                                    4,
+                                borderRadius:
+                                    "50%",
                                 background:
                                     "#b5bcc8"
                             }}
@@ -879,9 +993,12 @@ function HomeComponent() {
 
                         <Box
                             sx={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: "50%",
+                                width:
+                                    4,
+                                height:
+                                    4,
+                                borderRadius:
+                                    "50%",
                                 background:
                                     "#b5bcc8"
                             }}
@@ -891,7 +1008,7 @@ function HomeComponent() {
                         <Typography
                             variant="body2"
                         >
-                            Works on mobile
+                            Desktop & mobile
                         </Typography>
 
                     </Box>

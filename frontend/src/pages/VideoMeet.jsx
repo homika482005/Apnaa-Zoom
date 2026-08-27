@@ -48,9 +48,6 @@ import server from "../environment";
 import styles from "../styles/videoComponent.module.css";
 
 
-const serverUrl = server;
-
-
 const peerConfigConnections = {
 
     iceServers: [
@@ -65,6 +62,9 @@ const peerConfigConnections = {
 };
 
 
+const serverUrl = server;
+
+
 export default function VideoMeetComponent() {
 
     const {
@@ -77,12 +77,19 @@ export default function VideoMeetComponent() {
 
 
     const {
-        handleGoogleLogin
+        handleGoogleLogin,
+        addToUserHistory
     } =
         React.useContext(
             AuthContext
         );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refs
+    |--------------------------------------------------------------------------
+    */
 
     const socketRef =
         useRef(null);
@@ -99,6 +106,12 @@ export default function VideoMeetComponent() {
     const connectionsRef =
         useRef({});
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | State
+    |--------------------------------------------------------------------------
+    */
 
     const [cameraAvailable, setCameraAvailable] =
         useState(true);
@@ -186,34 +199,41 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Meeting Code
+    | Get Meeting Code
     |--------------------------------------------------------------------------
     */
 
-    const getMeetingCode = useCallback(() => {
+    const getMeetingCode =
+        useCallback(
+            () => {
 
-        return String(
-            url || ""
-        ).trim();
+                return String(
+                    url || ""
+                ).trim();
 
-    }, [url]);
+            },
+            [
+                url
+            ]
+        );
 
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication
+    | Check Authentication
     |--------------------------------------------------------------------------
     */
 
-    const hasAuthenticationToken = () => {
+    const hasAuthenticationToken =
+        () => {
 
-        return Boolean(
-            localStorage.getItem(
-                "token"
-            )
-        );
+            return Boolean(
+                localStorage.getItem(
+                    "token"
+                )
+            );
 
-    };
+        };
 
 
     /*
@@ -227,118 +247,124 @@ export default function VideoMeetComponent() {
         let active = true;
 
 
-        const validateMeeting = async () => {
+        const validateMeeting =
+            async () => {
 
-            const meetingCode =
-                getMeetingCode();
+                const meetingCode =
+                    getMeetingCode();
 
 
-            if (!meetingCode) {
+                if (!meetingCode) {
 
-                if (active) {
+                    if (active) {
 
-                    setMeetingChecking(
-                        false
-                    );
+                        setMeetingChecking(
+                            false
+                        );
 
-                    setMeetingValid(
-                        false
-                    );
+                        setMeetingValid(
+                            false
+                        );
 
-                    setError(
-                        "Meeting code is missing."
-                    );
+                        setError(
+                            "Meeting code is missing."
+                        );
+
+                    }
+
+                    return;
 
                 }
-
-                return;
-
-            }
-
-
-            try {
-
-                setMeetingChecking(
-                    true
-                );
-
-                setError("");
-
-
-                const response =
-                    await fetch(
-                        `${serverUrl}/api/v1/users/meeting/${encodeURIComponent(meetingCode)}`
-                    );
-
-
-                let data = {};
 
 
                 try {
 
-                    data =
-                        await response.json();
-
-                } catch (jsonError) {
-
-                    data = {};
-
-                }
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.message ||
-                        "Meeting not found"
-                    );
-
-                }
-
-
-                if (active) {
-
-                    setMeetingValid(
-                        data.valid === true
-                    );
-
-                }
-
-
-            } catch (validationError) {
-
-                console.error(
-                    "Meeting validation error:",
-                    validationError
-                );
-
-
-                if (active) {
-
-                    setMeetingValid(
-                        false
-                    );
-
-                    setError(
-                        validationError.message ||
-                        "Meeting not found"
-                    );
-
-                }
-
-            } finally {
-
-                if (active) {
-
                     setMeetingChecking(
-                        false
+                        true
                     );
+
+                    setError("");
+
+
+                    const response =
+                        await fetch(
+                            `${serverUrl}/api/v1/users/meeting/${encodeURIComponent(
+                                meetingCode
+                            )}`
+                        );
+
+
+                    let data = {};
+
+
+                    try {
+
+                        data =
+                            await response.json();
+
+                    } catch (
+                        jsonError
+                    ) {
+
+                        data = {};
+
+                    }
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.message ||
+                            "Meeting not found"
+                        );
+
+                    }
+
+
+                    if (active) {
+
+                        setMeetingValid(
+                            data.valid === true
+                        );
+
+                    }
+
+                } catch (
+                    validationError
+                ) {
+
+                    console.error(
+                        "Meeting validation error:",
+                        validationError
+                    );
+
+
+                    if (active) {
+
+                        setMeetingValid(
+                            false
+                        );
+
+                        setError(
+                            validationError.message ||
+                            "Meeting not found"
+                        );
+
+                    }
+
+                } finally {
+
+                    if (active) {
+
+                        setMeetingChecking(
+                            false
+                        );
+
+                    }
 
                 }
 
-            }
-
-        };
+            };
 
 
         validateMeeting();
@@ -357,7 +383,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Permissions
+    | Camera / Microphone Permissions
     |--------------------------------------------------------------------------
     */
 
@@ -387,7 +413,7 @@ export default function VideoMeetComponent() {
 
                     try {
 
-                        const videoStream =
+                        const stream =
                             await navigator.mediaDevices.getUserMedia({
                                 video:
                                     true
@@ -399,18 +425,20 @@ export default function VideoMeetComponent() {
                         );
 
 
-                        videoStream
+                        stream
                             .getTracks()
                             .forEach(
                                 track =>
                                     track.stop()
                             );
 
-                    } catch (videoError) {
+                    } catch (
+                        cameraError
+                    ) {
 
                         console.log(
                             "Camera permission:",
-                            videoError
+                            cameraError
                         );
 
 
@@ -423,7 +451,7 @@ export default function VideoMeetComponent() {
 
                     try {
 
-                        const audioStream =
+                        const stream =
                             await navigator.mediaDevices.getUserMedia({
                                 audio:
                                     true
@@ -435,18 +463,20 @@ export default function VideoMeetComponent() {
                         );
 
 
-                        audioStream
+                        stream
                             .getTracks()
                             .forEach(
                                 track =>
                                     track.stop()
                             );
 
-                    } catch (audioError) {
+                    } catch (
+                        microphoneError
+                    ) {
 
                         console.log(
                             "Microphone permission:",
-                            audioError
+                            microphoneError
                         );
 
 
@@ -464,7 +494,9 @@ export default function VideoMeetComponent() {
                         )
                     );
 
-                } catch (permissionError) {
+                } catch (
+                    permissionError
+                ) {
 
                     console.error(
                         "Permission check failed:",
@@ -480,7 +512,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Create Local Stream
+    | Create Local Media Stream
     |--------------------------------------------------------------------------
     */
 
@@ -519,18 +551,41 @@ export default function VideoMeetComponent() {
                     }
 
 
+                    const constraints = {
+
+                        video:
+                            includeVideo &&
+                            cameraAvailable,
+
+                        audio:
+                            includeAudio &&
+                            microphoneAvailable
+
+                    };
+
+
+                    /*
+                    ----------------------------------------------------------
+                    If both are unavailable, don't request media.
+                    ----------------------------------------------------------
+                    */
+
+                    if (
+                        !constraints.video &&
+                        !constraints.audio
+                    ) {
+
+                        throw new Error(
+                            "Camera and microphone are unavailable."
+                        );
+
+                    }
+
+
                     const stream =
-                        await navigator.mediaDevices.getUserMedia({
-
-                            video:
-                                includeVideo &&
-                                cameraAvailable,
-
-                            audio:
-                                includeAudio &&
-                                microphoneAvailable
-
-                        });
+                        await navigator.mediaDevices.getUserMedia(
+                            constraints
+                        );
 
 
                     window.localStream =
@@ -549,7 +604,9 @@ export default function VideoMeetComponent() {
 
                     return stream;
 
-                } catch (mediaError) {
+                } catch (
+                    mediaError
+                ) {
 
                     console.error(
                         "Media error:",
@@ -578,7 +635,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Guest Preview
+    | Guest Camera Preview
     |--------------------------------------------------------------------------
     */
 
@@ -605,7 +662,9 @@ export default function VideoMeetComponent() {
 
 
                 if (!active) {
+
                     return;
+
                 }
 
 
@@ -618,13 +677,11 @@ export default function VideoMeetComponent() {
 
                         const preview =
                             await navigator.mediaDevices.getUserMedia({
-
                                 video:
                                     true,
 
                                 audio:
                                     true
-
                             });
 
 
@@ -644,7 +701,9 @@ export default function VideoMeetComponent() {
 
                     }
 
-                } catch (previewError) {
+                } catch (
+                    previewError
+                ) {
 
                     console.log(
                         "Preview error:",
@@ -675,40 +734,43 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Stop Preview
+    | Stop Guest Preview
     |--------------------------------------------------------------------------
     */
 
-    const stopPreview = () => {
+    const stopPreview =
+        () => {
 
-        try {
+            try {
 
-            if (
-                window.previewStream
+                if (
+                    window.previewStream
+                ) {
+
+                    window.previewStream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
+
+
+                    window.previewStream =
+                        null;
+
+                }
+
+            } catch (
+                previewError
             ) {
 
-                window.previewStream
-                    .getTracks()
-                    .forEach(
-                        track =>
-                            track.stop()
-                    );
-
-
-                window.previewStream =
-                    null;
+                console.log(
+                    previewError
+                );
 
             }
 
-        } catch (previewError) {
-
-            console.log(
-                previewError
-            );
-
-        }
-
-    };
+        };
 
 
     /*
@@ -761,6 +823,13 @@ export default function VideoMeetComponent() {
                         connectionsRef.current[
                             peerId
                         ];
+
+
+                    if (!peer) {
+
+                        continue;
+
+                    }
 
 
                     const senders =
@@ -820,7 +889,9 @@ export default function VideoMeetComponent() {
 
                 }
 
-            } catch (streamError) {
+            } catch (
+                streamError
+            ) {
 
                 console.error(
                     "Stream replacement error:",
@@ -834,31 +905,32 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Signaling
+    | Send WebRTC Signal
     |--------------------------------------------------------------------------
     */
 
-    const sendSignal = (
-        targetId,
-        data
-    ) => {
+    const sendSignal =
+        (
+            targetId,
+            data
+        ) => {
 
-        if (
-            socketRef.current &&
-            socketRef.current.connected
-        ) {
+            if (
+                socketRef.current &&
+                socketRef.current.connected
+            ) {
 
-            socketRef.current.emit(
-                "signal",
-                targetId,
-                JSON.stringify(
-                    data
-                )
-            );
+                socketRef.current.emit(
+                    "signal",
+                    targetId,
+                    JSON.stringify(
+                        data
+                    )
+                );
 
-        }
+            }
 
-    };
+        };
 
 
     /*
@@ -879,18 +951,20 @@ export default function VideoMeetComponent() {
 
 
             if (!peer) {
+
                 return;
+
             }
 
 
             try {
 
-                const description =
+                const offer =
                     await peer.createOffer();
 
 
                 await peer.setLocalDescription(
-                    description
+                    offer
                 );
 
 
@@ -902,7 +976,9 @@ export default function VideoMeetComponent() {
                     }
                 );
 
-            } catch (offerError) {
+            } catch (
+                offerError
+            ) {
 
                 console.error(
                     "Offer error:",
@@ -916,7 +992,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Peer Connection
+    | Create Peer Connection
     |--------------------------------------------------------------------------
     */
 
@@ -978,6 +1054,13 @@ export default function VideoMeetComponent() {
                             event.streams[0];
 
 
+                        if (!stream) {
+
+                            return;
+
+                        }
+
+
                         setVideos(
                             currentVideos => {
 
@@ -1034,8 +1117,10 @@ export default function VideoMeetComponent() {
 
 
                         if (
-                            state === "failed" ||
-                            state === "closed"
+                            state ===
+                                "failed" ||
+                            state ===
+                                "closed"
                         ) {
 
                             try {
@@ -1079,11 +1164,14 @@ export default function VideoMeetComponent() {
                     window.localStream
                         .getTracks()
                         .forEach(
-                            track =>
+                            track => {
+
                                 peer.addTrack(
                                     track,
                                     window.localStream
-                                )
+                                );
+
+                            }
                         );
 
                 }
@@ -1186,7 +1274,9 @@ export default function VideoMeetComponent() {
 
                     }
 
-                } catch (signalError) {
+                } catch (
+                    signalError
+                ) {
 
                     console.error(
                         "Signal handling error:",
@@ -1204,7 +1294,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Chat
+    | Chat Message Handler
     |--------------------------------------------------------------------------
     */
 
@@ -1222,6 +1312,7 @@ export default function VideoMeetComponent() {
                         ...previousMessages,
 
                         {
+
                             sender:
                                 sender ||
                                 "Participant",
@@ -1241,6 +1332,7 @@ export default function VideoMeetComponent() {
                                                 "2-digit"
                                         }
                                     )
+
                         }
 
                     ]
@@ -1249,7 +1341,7 @@ export default function VideoMeetComponent() {
 
                 if (
                     senderSocketId !==
-                    socketIdRef.current &&
+                        socketIdRef.current &&
                     !showChat
                 ) {
 
@@ -1267,39 +1359,9 @@ export default function VideoMeetComponent() {
         );
 
 
-    const sendMessage =
-        () => {
-
-            const cleanMessage =
-                message.trim();
-
-
-            if (
-                !cleanMessage ||
-                !socketRef.current ||
-                !socketRef.current.connected
-            ) {
-
-                return;
-
-            }
-
-
-            socketRef.current.emit(
-                "chat-message",
-                cleanMessage,
-                username
-            );
-
-
-            setMessage("");
-
-        };
-
-
     /*
     |--------------------------------------------------------------------------
-    | Socket
+    | Socket Connection
     |--------------------------------------------------------------------------
     */
 
@@ -1325,7 +1387,7 @@ export default function VideoMeetComponent() {
                     );
 
 
-                    return;
+                    return false;
 
                 }
 
@@ -1385,7 +1447,13 @@ export default function VideoMeetComponent() {
 
 
                         setError(
-                            "Unable to connect to the meeting. Please try again."
+                            socketError.message ||
+                            "Unable to connect to the meeting."
+                        );
+
+
+                        setGuestLobby(
+                            true
                         );
 
                     }
@@ -1526,6 +1594,9 @@ export default function VideoMeetComponent() {
                     }
                 );
 
+
+                return true;
+
             },
             [
                 addMessage,
@@ -1533,6 +1604,50 @@ export default function VideoMeetComponent() {
                 gotMessageFromServer
             ]
         );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save Joined Meeting To History
+    |--------------------------------------------------------------------------
+    */
+
+    const saveJoinedMeetingHistory =
+        async () => {
+
+            try {
+
+                const meetingCode =
+                    getMeetingCode();
+
+
+                if (!meetingCode) {
+
+                    return;
+
+                }
+
+
+                await addToUserHistory(
+                    meetingCode
+                );
+
+            } catch (
+                historyError
+            ) {
+
+                /*
+                We don't block the call if history saving fails.
+                */
+
+                console.error(
+                    "Unable to save meeting history:",
+                    historyError
+                );
+
+            }
+
+        };
 
 
     /*
@@ -1559,6 +1674,12 @@ export default function VideoMeetComponent() {
 
             setError("");
 
+
+            /*
+            --------------------------------------------------------------
+            Authentication Gate
+            --------------------------------------------------------------
+            */
 
             if (
                 !hasAuthenticationToken()
@@ -1599,12 +1720,33 @@ export default function VideoMeetComponent() {
             }
 
 
+            /*
+            --------------------------------------------------------------
+            Save this existing meeting as joined
+            --------------------------------------------------------------
+            */
+
+            await saveJoinedMeetingHistory();
+
+
             setGuestLobby(
                 false
             );
 
 
-            await connectToSocketServer();
+            const connected =
+                await connectToSocketServer();
+
+
+            if (!connected) {
+
+                setJoining(
+                    false
+                );
+
+                return;
+
+            }
 
 
             setJoining(
@@ -1616,7 +1758,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Google Login
+    | Google Authentication
     |--------------------------------------------------------------------------
     */
 
@@ -1630,6 +1772,7 @@ export default function VideoMeetComponent() {
                 setGoogleLoginLoading(
                     true
                 );
+
 
                 setError("");
 
@@ -1701,12 +1844,33 @@ export default function VideoMeetComponent() {
                 }
 
 
+                /*
+                ----------------------------------------------------------
+                Save meeting as joined
+                ----------------------------------------------------------
+                */
+
+                await saveJoinedMeetingHistory();
+
+
                 setGuestLobby(
                     false
                 );
 
 
-                await connectToSocketServer();
+                const connected =
+                    await connectToSocketServer();
+
+
+                if (!connected) {
+
+                    setJoining(
+                        false
+                    );
+
+                    return;
+
+                }
 
 
                 setJoining(
@@ -1714,7 +1878,9 @@ export default function VideoMeetComponent() {
                 );
 
 
-            } catch (googleError) {
+            } catch (
+                googleError
+            ) {
 
                 console.error(
                     "Google authentication error:",
@@ -1741,7 +1907,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Camera
+    | Toggle Video
     |--------------------------------------------------------------------------
     */
 
@@ -1779,7 +1945,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Microphone
+    | Toggle Audio
     |--------------------------------------------------------------------------
     */
 
@@ -1817,7 +1983,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Screen Share
+    | Screen Sharing
     |--------------------------------------------------------------------------
     */
 
@@ -1869,15 +2035,13 @@ export default function VideoMeetComponent() {
             try {
 
                 const displayStream =
-                    await navigator.mediaDevices.getDisplayMedia(
-                        {
-                            video:
-                                true,
+                    await navigator.mediaDevices.getDisplayMedia({
+                        video:
+                            true,
 
-                            audio:
-                                true
-                        }
-                    );
+                        audio:
+                            true
+                    });
 
 
                 setScreen(
@@ -1928,7 +2092,9 @@ export default function VideoMeetComponent() {
 
                 }
 
-            } catch (screenError) {
+            } catch (
+                screenError
+            ) {
 
                 console.log(
                     "Screen sharing cancelled:",
@@ -1936,6 +2102,42 @@ export default function VideoMeetComponent() {
                 );
 
             }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Send Chat Message
+    |--------------------------------------------------------------------------
+    */
+
+    const sendMessage =
+        () => {
+
+            const cleanMessage =
+                message.trim();
+
+
+            if (
+                !cleanMessage ||
+                !socketRef.current ||
+                !socketRef.current.connected
+            ) {
+
+                return;
+
+            }
+
+
+            socketRef.current.emit(
+                "chat-message",
+                cleanMessage,
+                username
+            );
+
+
+            setMessage("");
 
         };
 
@@ -1972,7 +2174,9 @@ export default function VideoMeetComponent() {
                     1800
                 );
 
-            } catch (copyError) {
+            } catch (
+                copyError
+            ) {
 
                 console.error(
                     "Copy failed:",
@@ -2022,7 +2226,9 @@ export default function VideoMeetComponent() {
 
                 }
 
-            } catch (mediaError) {
+            } catch (
+                mediaError
+            ) {
 
                 console.log(
                     mediaError
@@ -2100,7 +2306,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Panels
+    | Chat / Participant Panels
     |--------------------------------------------------------------------------
     */
 
@@ -2180,7 +2386,9 @@ export default function VideoMeetComponent() {
 
                 }
 
-            } catch (cleanupError) {
+            } catch (
+                cleanupError
+            ) {
 
                 console.log(
                     cleanupError
@@ -2239,7 +2447,7 @@ export default function VideoMeetComponent() {
 
     /*
     |--------------------------------------------------------------------------
-    | Checking Meeting
+    | Meeting Validation Loading
     |--------------------------------------------------------------------------
     */
 
@@ -2519,7 +2727,7 @@ export default function VideoMeetComponent() {
                     }}
                 >
 
-                    {/* Preview */}
+                    {/* Camera Preview */}
 
                     <Box
                         sx={{
@@ -2589,68 +2797,47 @@ export default function VideoMeetComponent() {
                                 left:
                                     16,
 
-                                right:
-                                    16,
-
                                 bottom:
                                     16,
 
-                                display:
-                                    "flex",
+                                background:
+                                    "rgba(0,0,0,0.55)",
 
-                                alignItems:
-                                    "center",
+                                backdropFilter:
+                                    "blur(8px)",
 
-                                justifyContent:
-                                    "space-between",
+                                color:
+                                    "#fff",
 
-                                gap:
-                                    1
+                                borderRadius:
+                                    2,
+
+                                px:
+                                    1.5,
+
+                                py:
+                                    0.8
                             }}
                         >
 
-                            <Box
+                            <Typography
                                 sx={{
-                                    background:
-                                        "rgba(0,0,0,0.55)",
+                                    fontSize:
+                                        "0.82rem",
 
-                                    backdropFilter:
-                                        "blur(8px)",
-
-                                    color:
-                                        "#fff",
-
-                                    borderRadius:
-                                        2,
-
-                                    px:
-                                        1.5,
-
-                                    py:
-                                        0.8
+                                    fontWeight:
+                                        600
                                 }}
                             >
-
-                                <Typography
-                                    sx={{
-                                        fontSize:
-                                            "0.82rem",
-
-                                        fontWeight:
-                                            600
-                                    }}
-                                >
-                                    Camera preview
-                                </Typography>
-
-                            </Box>
+                                Camera preview
+                            </Typography>
 
                         </Box>
 
                     </Box>
 
 
-                    {/* Lobby */}
+                    {/* Lobby Card */}
 
                     <Box
                         sx={{
@@ -2938,7 +3125,9 @@ export default function VideoMeetComponent() {
                 </Box>
 
 
-                {/* Google login gate */}
+                {/* =================================================
+                    GOOGLE LOGIN GATE
+                ================================================== */}
 
                 {showLoginGate && (
 
@@ -3411,7 +3600,7 @@ export default function VideoMeetComponent() {
 
 
             {/* =====================================================
-                MEETING CONTENT
+                VIDEO AREA
             ====================================================== */}
 
             <Box
@@ -3546,14 +3735,12 @@ export default function VideoMeetComponent() {
                                             800
                                     }}
                                 >
-
                                     {(
                                         username ||
                                         "U"
                                     )
                                         .charAt(0)
                                         .toUpperCase()}
-
                                 </Box>
 
                             </Box>
@@ -3589,13 +3776,7 @@ export default function VideoMeetComponent() {
                             <Typography
                                 sx={{
                                     fontSize:
-                                        {
-                                            xs:
-                                                "0.75rem",
-
-                                            sm:
-                                                "0.82rem"
-                                        },
+                                        "0.8rem",
 
                                     fontWeight:
                                         600
@@ -3776,7 +3957,7 @@ export default function VideoMeetComponent() {
 
 
                 {/* =================================================
-                    CHAT
+                    CHAT PANEL
                 ================================================== */}
 
                 {showChat && (
@@ -4083,7 +4264,7 @@ export default function VideoMeetComponent() {
 
 
                 {/* =================================================
-                    PARTICIPANTS
+                    PARTICIPANTS PANEL
                 ================================================== */}
 
                 {showParticipants && (
@@ -4408,6 +4589,8 @@ export default function VideoMeetComponent() {
                 }
             >
 
+                {/* Microphone */}
+
                 <IconButton
                     onClick={
                         handleAudio
@@ -4440,6 +4623,8 @@ export default function VideoMeetComponent() {
                 </IconButton>
 
 
+                {/* Camera */}
+
                 <IconButton
                     onClick={
                         handleVideo
@@ -4471,6 +4656,8 @@ export default function VideoMeetComponent() {
 
                 </IconButton>
 
+
+                {/* Screen Share */}
 
                 {screenAvailable && (
 
@@ -4508,6 +4695,8 @@ export default function VideoMeetComponent() {
                 )}
 
 
+                {/* Chat */}
+
                 <Badge
                     badgeContent={
                         unreadMessages
@@ -4538,6 +4727,8 @@ export default function VideoMeetComponent() {
                 </Badge>
 
 
+                {/* Participants */}
+
                 <IconButton
                     onClick={
                         toggleParticipants
@@ -4557,6 +4748,8 @@ export default function VideoMeetComponent() {
 
                 </IconButton>
 
+
+                {/* End Call */}
 
                 <IconButton
                     onClick={

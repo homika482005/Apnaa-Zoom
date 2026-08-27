@@ -19,8 +19,10 @@ export const AuthContext =
 
 const client =
     axios.create({
+
         baseURL:
             `${server}/api/v1/users`
+
     });
 
 
@@ -46,7 +48,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Validate Existing Session
+    | Validate Stored Session
     |--------------------------------------------------------------------------
     */
 
@@ -90,7 +92,8 @@ export const AuthProvider = ({
 
 
                 if (
-                    request.status === 200
+                    request.status ===
+                    200
                 ) {
 
                     setIsAuthenticated(
@@ -98,20 +101,15 @@ export const AuthProvider = ({
                     );
 
 
-                    /*
-                    ----------------------------------------------------------
-                    Restore basic user information from localStorage
-                    if available.
-                    ----------------------------------------------------------
-                    */
-
                     const storedUser =
                         localStorage.getItem(
                             "user"
                         );
 
 
-                    if (storedUser) {
+                    if (
+                        storedUser
+                    ) {
 
                         try {
 
@@ -126,7 +124,7 @@ export const AuthProvider = ({
                         ) {
 
                             console.log(
-                                "Unable to restore stored user:",
+                                "Unable to restore user:",
                                 parseError
                             );
 
@@ -145,11 +143,13 @@ export const AuthProvider = ({
                 );
 
 
-            } catch (error) {
+            } catch (
+                sessionError
+            ) {
 
                 console.error(
                     "Session validation failed:",
-                    error
+                    sessionError
                 );
 
 
@@ -163,7 +163,10 @@ export const AuthProvider = ({
                 );
 
 
-                setUserData(null);
+                setUserData(
+                    null
+                );
+
 
                 setIsAuthenticated(
                     false
@@ -185,7 +188,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Validate Session On App Start
+    | Restore Session On App Start
     |--------------------------------------------------------------------------
     */
 
@@ -242,12 +245,6 @@ export const AuthProvider = ({
 
                 }
 
-
-                /*
-                --------------------------------------------------------------
-                Save session
-                --------------------------------------------------------------
-                */
 
                 localStorage.setItem(
                     "token",
@@ -478,7 +475,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Get Meeting History
+    | Get History
     |--------------------------------------------------------------------------
     */
 
@@ -518,12 +515,6 @@ export const AuthProvider = ({
 
             } catch (error) {
 
-                /*
-                --------------------------------------------------------------
-                If the session has expired, clear it.
-                --------------------------------------------------------------
-                */
-
                 if (
                     error.response?.status ===
                     401
@@ -539,7 +530,10 @@ export const AuthProvider = ({
                     );
 
 
-                    setUserData(null);
+                    setUserData(
+                        null
+                    );
+
 
                     setIsAuthenticated(
                         false
@@ -563,8 +557,7 @@ export const AuthProvider = ({
 
     const addToUserHistory =
         async (
-            meetingCode,
-            action = "joined"
+            meetingCode
         ) => {
 
             try {
@@ -592,10 +585,7 @@ export const AuthProvider = ({
                             token,
 
                             meeting_code:
-                                meetingCode,
-
-                            action:
-                                action
+                                meetingCode
 
                         }
                     );
@@ -621,7 +611,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Context Value
+    | Context Data
     |--------------------------------------------------------------------------
     */
 
@@ -652,7 +642,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Loading Screen
+    | Loading State
     |--------------------------------------------------------------------------
     */
 
@@ -686,9 +676,7 @@ export const AuthProvider = ({
                         "Arial, sans-serif"
                 }}
             >
-
                 Checking session...
-
             </div>
 
         );

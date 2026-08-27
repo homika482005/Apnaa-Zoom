@@ -1,7 +1,8 @@
 import axios from "axios";
 
-import {
+import React, {
     createContext,
+    useEffect,
     useState
 } from "react";
 
@@ -27,12 +28,172 @@ export const AuthProvider = ({
     children
 }) => {
 
-    const [userData, setUserData] =
-        useState({});
-
-
     const router =
         useNavigate();
+
+
+    const [userData, setUserData] =
+        useState(null);
+
+
+    const [authLoading, setAuthLoading] =
+        useState(true);
+
+
+    const [isAuthenticated, setIsAuthenticated] =
+        useState(false);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Existing Session
+    |--------------------------------------------------------------------------
+    */
+
+    const validateStoredSession =
+        async () => {
+
+            const token =
+                localStorage.getItem(
+                    "token"
+                );
+
+
+            if (!token) {
+
+                setUserData(null);
+
+                setIsAuthenticated(
+                    false
+                );
+
+                setAuthLoading(
+                    false
+                );
+
+                return false;
+
+            }
+
+
+            try {
+
+                const request =
+                    await client.get(
+                        "/validate-session",
+                        {
+                            params: {
+                                token
+                            }
+                        }
+                    );
+
+
+                if (
+                    request.status === 200
+                ) {
+
+                    setIsAuthenticated(
+                        true
+                    );
+
+
+                    /*
+                    ----------------------------------------------------------
+                    Restore basic user information from localStorage
+                    if available.
+                    ----------------------------------------------------------
+                    */
+
+                    const storedUser =
+                        localStorage.getItem(
+                            "user"
+                        );
+
+
+                    if (storedUser) {
+
+                        try {
+
+                            setUserData(
+                                JSON.parse(
+                                    storedUser
+                                )
+                            );
+
+                        } catch (
+                            parseError
+                        ) {
+
+                            console.log(
+                                "Unable to restore stored user:",
+                                parseError
+                            );
+
+                        }
+
+                    }
+
+
+                    return true;
+
+                }
+
+
+                throw new Error(
+                    "Invalid session"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Session validation failed:",
+                    error
+                );
+
+
+                localStorage.removeItem(
+                    "token"
+                );
+
+
+                localStorage.removeItem(
+                    "user"
+                );
+
+
+                setUserData(null);
+
+                setIsAuthenticated(
+                    false
+                );
+
+
+                return false;
+
+            } finally {
+
+                setAuthLoading(
+                    false
+                );
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Session On App Start
+    |--------------------------------------------------------------------------
+    */
+
+    useEffect(() => {
+
+        validateStoredSession();
+
+    }, []);
 
 
     /*
@@ -66,11 +227,70 @@ export const AuthProvider = ({
                     );
 
 
-                return request.data;
+                const data =
+                    request.data;
 
-            } catch (err) {
 
-                throw err;
+                if (
+                    !data ||
+                    !data.token
+                ) {
+
+                    throw new Error(
+                        "Google login failed"
+                    );
+
+                }
+
+
+                /*
+                --------------------------------------------------------------
+                Save session
+                --------------------------------------------------------------
+                */
+
+                localStorage.setItem(
+                    "token",
+                    data.token
+                );
+
+
+                if (
+                    data.user
+                ) {
+
+                    localStorage.setItem(
+                        "user",
+                        JSON.stringify(
+                            data.user
+                        )
+                    );
+
+
+                    setUserData(
+                        data.user
+                    );
+
+                }
+
+
+                setIsAuthenticated(
+                    true
+                );
+
+
+                return data;
+
+
+            } catch (error) {
+
+                console.error(
+                    "Google login error:",
+                    error
+                );
+
+
+                throw error;
 
             }
 
@@ -86,13 +306,13 @@ export const AuthProvider = ({
     const handleLogout =
         async () => {
 
+            const token =
+                localStorage.getItem(
+                    "token"
+                );
+
+
             try {
-
-                const token =
-                    localStorage.getItem(
-                        "token"
-                    );
-
 
                 if (token) {
 
@@ -105,11 +325,11 @@ export const AuthProvider = ({
 
                 }
 
-            } catch (err) {
+            } catch (error) {
 
                 console.error(
                     "Logout error:",
-                    err
+                    error
                 );
 
             } finally {
@@ -119,7 +339,19 @@ export const AuthProvider = ({
                 );
 
 
-                setUserData({});
+                localStorage.removeItem(
+                    "user"
+                );
+
+
+                setUserData(
+                    null
+                );
+
+
+                setIsAuthenticated(
+                    false
+                );
 
 
                 router(
@@ -133,7 +365,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Create New Meeting
+    | Create Meeting
     |--------------------------------------------------------------------------
     */
 
@@ -168,9 +400,16 @@ export const AuthProvider = ({
 
                 return request.data;
 
-            } catch (err) {
 
-                throw err;
+            } catch (error) {
+
+                console.error(
+                    "Create meeting error:",
+                    error
+                );
+
+
+                throw error;
 
             }
 
@@ -213,15 +452,24 @@ export const AuthProvider = ({
 
                 const request =
                     await client.get(
-                        `/meeting/${encodeURIComponent(cleanCode)}`
+                        `/meeting/${encodeURIComponent(
+                            cleanCode
+                        )}`
                     );
 
 
                 return request.data;
 
-            } catch (err) {
 
-                throw err;
+            } catch (error) {
+
+                console.error(
+                    "Validate meeting error:",
+                    error
+                );
+
+
+                throw error;
 
             }
 
@@ -245,6 +493,15 @@ export const AuthProvider = ({
                     );
 
 
+                if (!token) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
+
+
                 const request =
                     await client.get(
                         "/get_all_activity",
@@ -258,9 +515,40 @@ export const AuthProvider = ({
 
                 return request.data;
 
-            } catch (err) {
 
-                throw err;
+            } catch (error) {
+
+                /*
+                --------------------------------------------------------------
+                If the session has expired, clear it.
+                --------------------------------------------------------------
+                */
+
+                if (
+                    error.response?.status ===
+                    401
+                ) {
+
+                    localStorage.removeItem(
+                        "token"
+                    );
+
+
+                    localStorage.removeItem(
+                        "user"
+                    );
+
+
+                    setUserData(null);
+
+                    setIsAuthenticated(
+                        false
+                    );
+
+                }
+
+
+                throw error;
 
             }
 
@@ -269,13 +557,14 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Add Existing Meeting To User History
+    | Add Meeting To History
     |--------------------------------------------------------------------------
     */
 
     const addToUserHistory =
         async (
-            meetingCode
+            meetingCode,
+            action = "joined"
         ) => {
 
             try {
@@ -286,23 +575,44 @@ export const AuthProvider = ({
                     );
 
 
+                if (!token) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
+
+
                 const request =
                     await client.post(
                         "/add_to_activity",
                         {
+
                             token,
 
                             meeting_code:
-                                meetingCode
+                                meetingCode,
+
+                            action:
+                                action
+
                         }
                     );
 
 
                 return request.data;
 
-            } catch (err) {
 
-                throw err;
+            } catch (error) {
+
+                console.error(
+                    "Add meeting history error:",
+                    error
+                );
+
+
+                throw error;
 
             }
 
@@ -311,7 +621,7 @@ export const AuthProvider = ({
 
     /*
     |--------------------------------------------------------------------------
-    | Context
+    | Context Value
     |--------------------------------------------------------------------------
     */
 
@@ -320,6 +630,10 @@ export const AuthProvider = ({
         userData,
 
         setUserData,
+
+        authLoading,
+
+        isAuthenticated,
 
         handleGoogleLogin,
 
@@ -334,6 +648,52 @@ export const AuthProvider = ({
         addToUserHistory
 
     };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Loading Screen
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        authLoading
+    ) {
+
+        return (
+
+            <div
+                style={{
+                    minHeight:
+                        "100vh",
+
+                    display:
+                        "flex",
+
+                    alignItems:
+                        "center",
+
+                    justifyContent:
+                        "center",
+
+                    background:
+                        "#f7f9fc",
+
+                    color:
+                        "#667085",
+
+                    fontFamily:
+                        "Arial, sans-serif"
+                }}
+            >
+
+                Checking session...
+
+            </div>
+
+        );
+
+    }
 
 
     return (

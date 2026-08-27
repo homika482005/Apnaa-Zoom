@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 
 import { User } from "../models/user.model.js";
 import { Meeting } from "../models/meeting.model.js";
+import { MeetingHistory } from "../models/meetingHistory.model.js";
 
 
 const googleClient =
@@ -27,7 +28,9 @@ const createSession = async (
 ) => {
 
     const token =
-        crypto.randomBytes(32).toString("hex");
+        crypto
+            .randomBytes(32)
+            .toString("hex");
 
 
     user.token =
@@ -218,16 +221,20 @@ const googleLogin = async (
         const googleId =
             payload.sub;
 
+
         const email =
             payload.email;
+
 
         const name =
             payload.name ||
             "ApnaaZoom User";
 
+
         const avatar =
             payload.picture ||
             "";
+
 
         const emailVerified =
             payload.email_verified;
@@ -278,7 +285,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Find by Google ID
+        Find existing user by Google ID
         --------------------------------------------------------------
         */
 
@@ -312,7 +319,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Existing User
+        Existing user
         --------------------------------------------------------------
         */
 
@@ -373,7 +380,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        New Google User
+        New Google user
         --------------------------------------------------------------
         */
 
@@ -449,7 +456,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Create new Google user
+        Create new user
         --------------------------------------------------------------
         */
 
@@ -479,7 +486,7 @@ const googleLogin = async (
 
         /*
         --------------------------------------------------------------
-        Create Session
+        Create session
         --------------------------------------------------------------
         */
 
@@ -612,9 +619,12 @@ const createMeeting = async (
         --------------------------------------------------------------
         */
 
-        let meetingCode = "";
+        let meetingCode =
+            "";
 
-        let existingMeeting = null;
+
+        let existingMeeting =
+            null;
 
 
         do {
@@ -644,23 +654,43 @@ const createMeeting = async (
 
         /*
         --------------------------------------------------------------
-        Save meeting
+        Create actual meeting
         --------------------------------------------------------------
         */
 
         const meeting =
             new Meeting({
 
-                user_id:
-                    user.username,
-
                 meetingCode:
-                    meetingCode
+                    meetingCode,
+
+                createdBy:
+                    user.username
 
             });
 
 
         await meeting.save();
+
+
+        /*
+        --------------------------------------------------------------
+        Save creator's history
+        --------------------------------------------------------------
+        */
+
+        await MeetingHistory.create({
+
+            user_id:
+                user.username,
+
+            meetingCode:
+                meeting.meetingCode,
+
+            action:
+                "created"
+
+        });
 
 
         /*
@@ -680,7 +710,7 @@ const createMeeting = async (
                 meeting.meetingCode,
 
             date:
-                meeting.date
+                meeting.createdAt
 
         });
 
@@ -709,7 +739,7 @@ const createMeeting = async (
 
 /*
 |--------------------------------------------------------------------------
-| Validate Meeting Code
+| Validate Meeting
 |--------------------------------------------------------------------------
 */
 
@@ -772,7 +802,13 @@ const validateMeeting = async (
                 true,
 
             meetingCode:
-                meeting.meetingCode
+                meeting.meetingCode,
+
+            createdBy:
+                meeting.createdBy,
+
+            createdAt:
+                meeting.createdAt
 
         });
 
@@ -947,8 +983,8 @@ const getUserHistory = async (
         }
 
 
-        const meetings =
-            await Meeting.find({
+        const history =
+            await MeetingHistory.find({
 
                 user_id:
                     user.username
@@ -964,7 +1000,7 @@ const getUserHistory = async (
         return res.status(
             httpStatus.OK
         ).json(
-            meetings
+            history
         );
 
 
@@ -992,7 +1028,7 @@ const getUserHistory = async (
 
 /*
 |--------------------------------------------------------------------------
-| Add Existing Meeting To User History
+| Add Meeting To User History
 |--------------------------------------------------------------------------
 */
 
@@ -1003,7 +1039,8 @@ const addToHistory = async (
 
     const {
         token,
-        meeting_code
+        meeting_code,
+        action = "joined"
     } = req.body;
 
 
@@ -1036,11 +1073,32 @@ const addToHistory = async (
     }
 
 
+    if (
+        ![
+            "created",
+            "joined"
+        ].includes(
+            action
+        )
+    ) {
+
+        return res.status(
+            httpStatus.BAD_REQUEST
+        ).json({
+
+            message:
+                "Invalid history action"
+
+        });
+
+    }
+
+
     try {
 
         /*
         --------------------------------------------------------------
-        Validate logged-in user
+        Validate user
         --------------------------------------------------------------
         */
 
@@ -1074,7 +1132,7 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
-        Make sure the meeting actually exists
+        Make sure actual meeting exists
         --------------------------------------------------------------
         */
 
@@ -1103,25 +1161,27 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
-        Don't create another meeting.
-        Save a history entry only when needed.
+        Prevent duplicate history entry
         --------------------------------------------------------------
         */
 
-        const alreadyInHistory =
-            await Meeting.findOne({
+        const existingHistory =
+            await MeetingHistory.findOne({
 
                 user_id:
                     user.username,
 
                 meetingCode:
-                    cleanMeetingCode
+                    cleanMeetingCode,
+
+                action:
+                    action
 
             });
 
 
         if (
-            alreadyInHistory
+            existingHistory
         ) {
 
             return res.status(
@@ -1132,7 +1192,10 @@ const addToHistory = async (
                     "Meeting already exists in history",
 
                 meetingCode:
-                    cleanMeetingCode
+                    cleanMeetingCode,
+
+                action:
+                    action
 
             });
 
@@ -1141,22 +1204,21 @@ const addToHistory = async (
 
         /*
         --------------------------------------------------------------
-        Save history entry
-        --------------------------------------------------------------
-
-        We use the same Meeting collection for now.
-        The record represents this user's history.
+        Create history entry
         --------------------------------------------------------------
         */
 
         const historyEntry =
-            new Meeting({
+            new MeetingHistory({
 
                 user_id:
                     user.username,
 
                 meetingCode:
-                    cleanMeetingCode
+                    cleanMeetingCode,
+
+                action:
+                    action
 
             });
 
@@ -1169,10 +1231,13 @@ const addToHistory = async (
         ).json({
 
             message:
-                "Added meeting to history",
+                "Meeting added to history",
 
             meetingCode:
-                cleanMeetingCode
+                cleanMeetingCode,
+
+            action:
+                action
 
         });
 

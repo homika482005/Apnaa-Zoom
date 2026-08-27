@@ -1,20 +1,19 @@
-import './App.css';
+import "./App.css";
 
 import {
-    Route,
     BrowserRouter as Router,
+    Route,
     Routes
-} from 'react-router-dom';
+} from "react-router-dom";
 
 
-import LandingPage from './pages/landing';
-import Authentication from './pages/authentication';
+import LandingPage from "./pages/landing";
+import Authentication from "./pages/authentication";
+import HomeComponent from "./pages/home";
+import History from "./pages/history";
+import VideoMeetComponent from "./pages/VideoMeet";
 
-import { AuthProvider } from './contexts/AuthContext';
-
-import VideoMeetComponent from './pages/VideoMeet';
-import HomeComponent from './pages/home';
-import History from './pages/history';
+import { AuthProvider } from "./contexts/AuthContext";
 
 
 function App() {
@@ -29,6 +28,8 @@ function App() {
 
                     <Routes>
 
+                        {/* Landing */}
+
                         <Route
                             path="/"
                             element={
@@ -36,6 +37,8 @@ function App() {
                             }
                         />
 
+
+                        {/* Google Authentication */}
 
                         <Route
                             path="/auth"
@@ -45,6 +48,8 @@ function App() {
                         />
 
 
+                        {/* Authenticated Dashboard */}
+
                         <Route
                             path="/home"
                             element={
@@ -52,6 +57,8 @@ function App() {
                             }
                         />
 
+
+                        {/* Meeting History */}
 
                         <Route
                             path="/history"
@@ -61,6 +68,8 @@ function App() {
                         />
 
 
+                        {/* Meeting */}
+
                         <Route
                             path="/meeting/:url"
                             element={
@@ -68,6 +77,15 @@ function App() {
                             }
                         />
 
+
+                        {/* Fallback */}
+
+                        <Route
+                            path="*"
+                            element={
+                                <LandingPage />
+                            }
+                        />
 
                     </Routes>
 

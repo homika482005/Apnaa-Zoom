@@ -107,15 +107,11 @@ export const connectToSocket = (
         new Server(
             server,
             {
-
                 cors: {
 
                     origin: [
-
                         "https://apnaazoom-frontend.onrender.com",
-
                         "http://localhost:3000"
-
                     ],
 
                     methods: [
@@ -250,6 +246,11 @@ export const connectToSocket = (
 
                     if (!path) {
 
+                        socket.emit(
+                            "meeting-error",
+                            "Invalid meeting link"
+                        );
+
                         return;
 
                     }
@@ -281,13 +282,16 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Check actual meeting in MongoDB
+                    Find meeting
                     --------------------------------------------------------------
                     */
 
+                    let meeting;
+
+
                     try {
 
-                        const meeting =
+                        meeting =
                             await Meeting.findOne({
 
                                 meetingCode:
@@ -295,17 +299,6 @@ export const connectToSocket = (
 
                             });
 
-
-                        if (!meeting) {
-
-                            socket.emit(
-                                "meeting-error",
-                                "Meeting not found"
-                            );
-
-                            return;
-
-                        }
 
                     } catch (meetingError) {
 
@@ -325,9 +318,54 @@ export const connectToSocket = (
                     }
 
 
+                    if (!meeting) {
+
+                        socket.emit(
+                            "meeting-error",
+                            "Meeting not found"
+                        );
+
+                        return;
+
+                    }
+
+
                     /*
                     --------------------------------------------------------------
-                    Use normalized meeting room ID
+                    Re-activate an existing meeting when somebody joins again.
+                    --------------------------------------------------------------
+                    */
+
+                    if (
+                        meeting.status !==
+                        "active"
+                    ) {
+
+                        try {
+
+                            meeting.status =
+                                "active";
+
+
+                            await meeting.save();
+
+                        } catch (
+                            statusError
+                        ) {
+
+                            console.error(
+                                "Meeting status update error:",
+                                statusError
+                            );
+
+                        }
+
+                    }
+
+
+                    /*
+                    --------------------------------------------------------------
+                    Room ID
                     --------------------------------------------------------------
                     */
 
@@ -337,7 +375,7 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Leave previous room if any
+                    Leave previous room
                     --------------------------------------------------------------
                     */
 
@@ -407,10 +445,14 @@ export const connectToSocket = (
                     */
 
                     if (
-                        !connections[room]
+                        !connections[
+                            room
+                        ]
                     ) {
 
-                        connections[room] =
+                        connections[
+                            room
+                        ] =
                             [];
 
                     }
@@ -418,7 +460,7 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Add socket to room
+                    Add socket
                     --------------------------------------------------------------
                     */
 
@@ -452,7 +494,7 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Notify all participants
+                    Notify room participants
                     --------------------------------------------------------------
                     */
 
@@ -462,27 +504,26 @@ export const connectToSocket = (
                         ];
 
 
-                    for (
-                        let i = 0;
-                        i <
-                        roomConnections.length;
-                        i++
-                    ) {
+                    roomConnections.forEach(
+                        (
+                            socketId
+                        ) => {
 
-                        io.to(
-                            roomConnections[i]
-                        ).emit(
-                            "user-joined",
-                            socket.id,
-                            roomConnections
-                        );
+                            io.to(
+                                socketId
+                            ).emit(
+                                "user-joined",
+                                socket.id,
+                                roomConnections
+                            );
 
-                    }
+                        }
+                    );
 
 
                     /*
                     --------------------------------------------------------------
-                    Send previous chat messages
+                    Send previous messages
                     --------------------------------------------------------------
                     */
 
@@ -492,38 +533,29 @@ export const connectToSocket = (
                         ]
                     ) {
 
-                        for (
-                            let i = 0;
-                            i <
-                            messages[
-                                room
-                            ].length;
-                            i++
-                        ) {
+                        messages[
+                            room
+                        ].forEach(
+                            chatMessage => {
 
-                            const chatMessage =
-                                messages[
-                                    room
-                                ][i];
+                                io.to(
+                                    socket.id
+                                ).emit(
 
+                                    "chat-message",
 
-                            io.to(
-                                socket.id
-                            ).emit(
+                                    chatMessage.data,
 
-                                "chat-message",
+                                    chatMessage.sender,
 
-                                chatMessage.data,
+                                    chatMessage[
+                                        "socket-id-sender"
+                                    ]
 
-                                chatMessage.sender,
+                                );
 
-                                chatMessage[
-                                    "socket-id-sender"
-                                ]
-
-                            );
-
-                        }
+                            }
+                        );
 
                     }
 
@@ -553,12 +585,6 @@ export const connectToSocket = (
 
                     }
 
-
-                    /*
-                    --------------------------------------------------------------
-                    Only allow signaling while inside a valid meeting
-                    --------------------------------------------------------------
-                    */
 
                     if (
                         !socket.currentRoom ||
@@ -646,6 +672,29 @@ export const connectToSocket = (
                     }
 
 
+                    const cleanMessage =
+                        String(
+                            data
+                        ).trim();
+
+
+                    if (!cleanMessage) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        cleanMessage.length >
+                        2000
+                    ) {
+
+                        return;
+
+                    }
+
+
                     if (
                         messages[
                             room
@@ -668,44 +717,12 @@ export const connectToSocket = (
                             "User",
 
                         data:
-                            String(data)
-                                .trim(),
+                            cleanMessage,
 
                         "socket-id-sender":
                             socket.id
 
                     };
-
-
-                    /*
-                    --------------------------------------------------------------
-                    Don't store empty messages
-                    --------------------------------------------------------------
-                    */
-
-                    if (
-                        !chatMessage.data
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    /*
-                    --------------------------------------------------------------
-                    Basic size protection
-                    --------------------------------------------------------------
-                    */
-
-                    if (
-                        chatMessage.data.length >
-                        2000
-                    ) {
-
-                        return;
-
-                    }
 
 
                     messages[
@@ -751,7 +768,7 @@ export const connectToSocket = (
 
             socket.on(
                 "disconnect",
-                () => {
+                async () => {
 
                     console.log(
                         "Socket disconnected:",
@@ -769,7 +786,15 @@ export const connectToSocket = (
 
 
                     if (
-                        !room ||
+                        !room
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
                         !connections[
                             room
                         ]
@@ -782,7 +807,7 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Notify remaining users
+                    Notify remaining participants
                     --------------------------------------------------------------
                     */
 
@@ -831,7 +856,8 @@ export const connectToSocket = (
 
                     /*
                     --------------------------------------------------------------
-                    Remove empty room
+                    If nobody remains:
+                    mark meeting as ended.
                     --------------------------------------------------------------
                     */
 
@@ -841,6 +867,43 @@ export const connectToSocket = (
                         ].length ===
                         0
                     ) {
+
+                        const meetingCode =
+                            room.replace(
+                                "meeting:",
+                                ""
+                            );
+
+
+                        try {
+
+                            await Meeting.findOneAndUpdate(
+
+                                {
+                                    meetingCode:
+                                        meetingCode
+                                },
+
+                                {
+                                    $set: {
+                                        status:
+                                            "ended"
+                                    }
+                                }
+
+                            );
+
+                        } catch (
+                            statusError
+                        ) {
+
+                            console.error(
+                                "Unable to end meeting:",
+                                statusError
+                            );
+
+                        }
+
 
                         delete connections[
                             room

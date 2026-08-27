@@ -17,6 +17,17 @@ const meetingSchema =
             createdBy: {
                 type: String,
                 required: true,
+                index: true,
+                trim: true
+            },
+
+            status: {
+                type: String,
+                enum: [
+                    "active",
+                    "ended"
+                ],
+                default: "active",
                 index: true
             },
 
@@ -26,8 +37,7 @@ const meetingSchema =
                 required: true
             }
         }
-    )
-    ;
+    );
 
 
 const Meeting =

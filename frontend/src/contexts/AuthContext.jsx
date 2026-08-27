@@ -1,167 +1,319 @@
 import axios from "axios";
+
 import {
     createContext,
     useState
 } from "react";
-import { useNavigate } from "react-router-dom";
+
+import {
+    useNavigate
+} from "react-router-dom";
+
 import server from "../environment";
 
 
-export const AuthContext = createContext({});
+export const AuthContext =
+    createContext({});
 
 
-const client = axios.create({
-    baseURL: `${server}/api/v1/users`
-});
+const client =
+    axios.create({
+        baseURL:
+            `${server}/api/v1/users`
+    });
 
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({
+    children
+}) => {
 
     const [userData, setUserData] =
         useState({});
 
 
-    const router = useNavigate();
+    const router =
+        useNavigate();
 
 
-    const handleGoogleLogin = async (
-        credential
-    ) => {
+    /*
+    |--------------------------------------------------------------------------
+    | Google Login
+    |--------------------------------------------------------------------------
+    */
 
-        try {
+    const handleGoogleLogin =
+        async (
+            credential
+        ) => {
 
-            if (!credential) {
+            try {
 
-                throw new Error(
-                    "Google credential is missing"
-                );
+                if (!credential) {
 
-            }
+                    throw new Error(
+                        "Google credential is missing"
+                    );
 
-
-            const request =
-                await client.post(
-                    "/google",
-                    {
-                        credential
-                    }
-                );
+                }
 
 
-            return request.data;
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    };
+                const request =
+                    await client.post(
+                        "/google",
+                        {
+                            credential
+                        }
+                    );
 
 
-    const handleLogout = async () => {
+                return request.data;
 
-        try {
+            } catch (err) {
 
-            const token =
-                localStorage.getItem("token");
-
-
-            if (token) {
-
-                await client.post(
-                    "/logout",
-                    {
-                        token
-                    }
-                );
+                throw err;
 
             }
 
-        } catch (err) {
-
-            console.error(
-                "Logout error:",
-                err
-            );
-
-        } finally {
-
-            localStorage.removeItem(
-                "token"
-            );
-
-            setUserData({});
-
-            router("/auth");
-
-        }
-
-    };
+        };
 
 
-    const getHistoryOfUser = async () => {
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
 
-        try {
+    const handleLogout =
+        async () => {
 
-            const token =
-                localStorage.getItem("token");
+            try {
+
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
 
 
-            const request =
-                await client.get(
-                    "/get_all_activity",
-                    {
-                        params: {
+                if (token) {
+
+                    await client.post(
+                        "/logout",
+                        {
                             token
                         }
-                    }
+                    );
+
+                }
+
+            } catch (err) {
+
+                console.error(
+                    "Logout error:",
+                    err
+                );
+
+            } finally {
+
+                localStorage.removeItem(
+                    "token"
                 );
 
 
-            return request.data;
-
-        } catch (err) {
-
-            throw err;
-
-        }
-
-    };
+                setUserData({});
 
 
-    const addToUserHistory = async (
-        meetingCode
-    ) => {
-
-        try {
-
-            const token =
-                localStorage.getItem("token");
-
-
-            const request =
-                await client.post(
-                    "/add_to_activity",
-                    {
-                        token,
-
-                        meeting_code:
-                            meetingCode
-                    }
+                router(
+                    "/auth"
                 );
 
+            }
 
-            return request;
+        };
 
-        } catch (err) {
 
-            throw err;
+    /*
+    |--------------------------------------------------------------------------
+    | Create New Meeting
+    |--------------------------------------------------------------------------
+    */
 
-        }
+    const createMeeting =
+        async () => {
 
-    };
+            try {
 
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
+
+
+                if (!token) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
+
+
+                const request =
+                    await client.post(
+                        "/meetings",
+                        {
+                            token
+                        }
+                    );
+
+
+                return request.data;
+
+            } catch (err) {
+
+                throw err;
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Meeting
+    |--------------------------------------------------------------------------
+    */
+
+    const validateMeeting =
+        async (
+            meetingCode
+        ) => {
+
+            try {
+
+                const cleanCode =
+                    String(
+                        meetingCode ||
+                        ""
+                    )
+                        .trim()
+                        .replace(
+                            /\s+/g,
+                            ""
+                        );
+
+
+                if (!cleanCode) {
+
+                    throw new Error(
+                        "Meeting code is required"
+                    );
+
+                }
+
+
+                const request =
+                    await client.get(
+                        `/meeting/${encodeURIComponent(cleanCode)}`
+                    );
+
+
+                return request.data;
+
+            } catch (err) {
+
+                throw err;
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Meeting History
+    |--------------------------------------------------------------------------
+    */
+
+    const getHistoryOfUser =
+        async () => {
+
+            try {
+
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
+
+
+                const request =
+                    await client.get(
+                        "/get_all_activity",
+                        {
+                            params: {
+                                token
+                            }
+                        }
+                    );
+
+
+                return request.data;
+
+            } catch (err) {
+
+                throw err;
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Add Existing Meeting To User History
+    |--------------------------------------------------------------------------
+    */
+
+    const addToUserHistory =
+        async (
+            meetingCode
+        ) => {
+
+            try {
+
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
+
+
+                const request =
+                    await client.post(
+                        "/add_to_activity",
+                        {
+                            token,
+
+                            meeting_code:
+                                meetingCode
+                        }
+                    );
+
+
+                return request.data;
+
+            } catch (err) {
+
+                throw err;
+
+            }
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Context
+    |--------------------------------------------------------------------------
+    */
 
     const data = {
 
@@ -173,6 +325,10 @@ export const AuthProvider = ({ children }) => {
 
         handleLogout,
 
+        createMeeting,
+
+        validateMeeting,
+
         getHistoryOfUser,
 
         addToUserHistory
@@ -181,11 +337,17 @@ export const AuthProvider = ({ children }) => {
 
 
     return (
+
         <AuthContext.Provider
-            value={data}
+            value={
+                data
+            }
         >
+
             {children}
+
         </AuthContext.Provider>
+
     );
 
 };
